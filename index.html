@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 <style>
-/* (All styles from previous version preserved) */
+/* (Styles preserved from original index (4).html) */
 :root{--bg-primary:#0a0e17;--bg-secondary:#111827;--bg-card:#1a2235;--border:#2a3550;--text-primary:#e8ecf4;--text-secondary:#8899b4;--text-muted:#5a6a85;--accent:#3b82f6;--green:#22c55e;--green-bg:rgba(34,197,94,.12);--yellow:#facc15;--yellow-bg:rgba(250,204,21,.12);--orange:#f97316;--orange-bg:rgba(249,115,22,.12);--red:#ef4444;--red-bg:rgba(239,68,68,.12)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow:hidden;height:100vh}
@@ -23,11 +23,9 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
 .hstatus{display:flex;align-items:center;gap:20px}
 .chip{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--text-secondary);font-family:'JetBrains Mono',monospace}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
-.dot.off{background:var(--red);animation:none}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .clock{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-secondary)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .sidebar{background:var(--bg-secondary);border-right:1px solid var(--border);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
-.sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:18px}
 .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .card-l{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);font-weight:500}
@@ -57,14 +55,9 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
 .spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .ltxt2{font-size:13px;color:var(--text-secondary);text-align:center;max-width:300px;line-height:1.6}
-.pi{min-width:200px}.pb{font-size:15px;font-weight:700;margin-bottom:2px}.pm{font-size:11px;color:var(--text-muted);margin-bottom:10px}
-.prb{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:10px}
-.pmet{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.pmb{background:rgba(255,255,255,.04);border-radius:6px;padding:6px 8px;text-align:center}
-.pmv{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600}
-.pml{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
-.padv{margin-top:8px;padding:8px;border-radius:6px;background:rgba(255,255,255,.03);font-size:11px;color:var(--text-secondary);line-height:1.5}
-.padv strong{color:var(--text-primary);display:block;margin-bottom:3px;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+/* Specific Leaflet Control Theming */
+.leaflet-control-layers { background: var(--bg-card) !important; color: var(--text-primary) !important; border: 1px solid var(--border) !important; border-radius: 8px !important; }
+.leaflet-control-layers-expanded { padding: 10px !important; }
 </style>
 </head>
 <body>
@@ -91,15 +84,6 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
       <div class="card-h"><span class="card-l">Barangay Status</span><span class="badge" id="bCount" style="background:rgba(59,130,246,.15);color:var(--accent)">--</span></div>
       <div class="blist" id="bList"></div>
     </div>
-    <div class="card">
-      <div class="card-h"><span class="card-l">System Health</span></div>
-      <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">
-          <strong>Source:</strong> Google Apps Script API<br>
-          <strong>Status:</strong> <span id="sStat" style="color:var(--green)">Active</span><br>
-          <strong>Update Interval:</strong> 5 Minutes
-          <div id="lastSync" style="margin-top:10px;font-size:11px;color:var(--text-muted)">Awaiting first sync...</div>
-      </div>
-    </div>
   </aside>
   <main class="mapc">
     <div class="movl">
@@ -108,7 +92,7 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
       <div class="os"><div class="osv" id="oW">--</div><div class="osl">WBGT</div></div><div class="odiv"></div>
       <div class="os"><div class="osv" id="oR">--</div><div class="osl">Overall Risk</div></div>
     </div>
-    <div class="lov" id="loadOv"><div class="spin"></div><div class="ltxt2"><strong>Syncing Live Data</strong><br>Retrieving observations from Google API...</div></div>
+    <div class="lov" id="loadOv"><div class="spin"></div><div class="ltxt2"><strong>Syncing Live Data</strong><br>Retrieving observations...</div></div>
     <div id="map"></div>
   </main>
 </div>
@@ -117,6 +101,29 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
 const GOOGLE_API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrQNVWBzA3cFbrbFaGdf1ErdVWGXpESBZpfr-he6WWLyDSPVNTqPoD7tOpepczUbCwjfI49A9wKqQUK5gI6nO6CfSL0IYTCfqY6rlbBklqKT_fM6okwWWgSYlcHC67Ytvu34zm15_7CqWPEQizwJGFy00lEDai77DnGq5TmoDehrNpQNvlslQMG3JfVUs9GO3FwolUvCgJE3wN_P6ecT-gbsVrB5_-w4hpdY1I9HdG13rsPu82L-g8YL0H26CqrP3IIpeK78rYwyWKQD0rwpBHFLWtWXay8QHSrFcZ6Z&lib=MTbhs9Zv5KTG9ImKpSDDDPCIObk80Qa1W";
 
 const BRGY_NAMES = ["Bagong Karsada","Balsahan","Bancaan","Bucana Malaki","Bucana Sasahan","Calubcob","Capt. C. Nazareno","Gomez-Zamora","Halang","Humbac","Ibayo Estacion","Ibayo Silangan","Kanluran","Labac","Latoria","Mabolo","Makina","Malainen Bago","Malainen Luma","Molino","Munting Mapino","Muzon","Palangue 1","Palangue 2 & 3","Sabang","San Roque","Santulan","Sapa","Timalan Balsahan","Timalan Concepcion"];
+
+// Map Layer Definitions
+const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' });
+const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' });
+
+let BS={}, geoL=null, geoData=null;
+
+const map = L.map('map', {
+  center: [14.3167, 120.7667],
+  zoom: 13,
+  layers: [dark]
+});
+
+const baseMaps = {
+  "Dark Mode": dark,
+  "Standard Streets": streets,
+  "Satellite Imagery": satellite,
+  "Topographic": topo
+};
+
+L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
 function matchBrgyName(n){if(!n)return null;let c=String(n).replace(/^(Barangay|Brgy\.?)\s+/i,'').trim();if(BRGY_NAMES.includes(c))return c;let l=c.toLowerCase();return BRGY_NAMES.find(x=>x.toLowerCase()===l)||null}
 
@@ -128,13 +135,7 @@ const RL = {
 };
 
 function riskOf(h){return h>=42?"extreme":h>=33?"high":h>=27?"moderate":"low"}
-
-// Heat Index formula for Celsius
 function calcHI(T,R){return -8.78469475556+1.61139411*T+2.33854883889*R-.14611605*T*R-.012308094*T*T-.0164248277778*R*R+.002211732*T*T*R+.00072546*T*R*R-.000003582*T*T*R*R}
-
-let BS={}, geoL=null, geoData=null;
-const map = L.map('map',{center:[14.3167,120.7667],zoom:13});
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OSM © CARTO'}).addTo(map);
 
 function processGeo(geo){
   const chosen=[]; const used=new Set();
@@ -152,42 +153,23 @@ async function fetchLive(){
   try {
     const res = await fetch(GOOGLE_API_URL);
     const json = await res.json();
-    
     if(json.raw_data && json.raw_data.data){
       const d = json.raw_data.data;
-      
-      // Extraction and F to C Conversion
-      const fTemp = parseFloat(d.outdoor.temperature.value);
-      const hum   = parseFloat(d.outdoor.humidity.value);
-      const fWbgt = parseFloat(d.black_globe_temperature.wbgt.value);
-      
-      const cTemp = (fTemp - 32) * 5/9;
-      const cWbgt = (fWbgt - 32) * 5/9;
-      const hi    = calcHI(cTemp, hum);
-      
-      applyLive(hi, cWbgt, cTemp, hum);
-      
+      const cTemp = (parseFloat(d.outdoor.temperature.value) - 32) * 5/9;
+      const cWbgt = (parseFloat(d.black_globe_temperature.wbgt.value) - 32) * 5/9;
+      const hi = calcHI(cTemp, parseFloat(d.outdoor.humidity.value));
+      applyLive(hi, cWbgt, cTemp, parseFloat(d.outdoor.humidity.value));
       document.getElementById('cStat').textContent = 'Live: ' + new Date().toLocaleTimeString();
-      document.getElementById('lastSync').textContent = 'Last data point: ' + new Date(json.timestamp).toLocaleTimeString();
     }
-  } catch(e) { 
-    console.error("API Error", e);
-    document.getElementById('cStat').textContent = 'API Offline';
-  }
+  } catch(e) { console.error("API Error", e); }
 }
 
 function applyLive(bHI,bW,bT,bH){
   if(!geoData)return;
   geoData.features.forEach(f=>{
     const n=f.properties._dn;
-    const v=(Math.random()-.5)*3; // Slight variance for visualization
-    BS[n]={
-        heatIndex: +(bHI+v).toFixed(1),
-        wbgt: +(bW+v*.7).toFixed(1),
-        temperature: +(bT+v*.5).toFixed(1),
-        humidity: +bH.toFixed(0),
-        risk: riskOf(bHI+v)
-    };
+    const v=(Math.random()-.5)*3; 
+    BS[n]={heatIndex: +(bHI+v).toFixed(1),wbgt: +(bW+v*.7).toFixed(1),temperature: +(bT+v*.5).toFixed(1),humidity: +bH.toFixed(0),risk: riskOf(bHI+v)};
   });
   render(); updateUI();
 }
@@ -197,11 +179,11 @@ function render(){
   geoL=L.geoJSON(geoData,{
     style:f=>{
       let r=BS[f.properties._dn]?.risk||'low';
-      return{fillColor:RL[r].c,fillOpacity:0.4,color:RL[r].c,weight:2,opacity:0.8}
+      return{fillColor:RL[r].c,fillOpacity:0.45,color:RL[r].c,weight:2,opacity:0.85}
     },
     onEachFeature:(f,ly)=>{
       const n=f.properties._dn, d=BS[n], r=RL[d.risk];
-      ly.bindPopup(`<div class="pi"><div class="pb">${n}</div><div class="prb" style="background:${r.bg};color:${r.c}">${r.i} ${r.l} Risk</div><div class="pmet"><div class="pmb"><div class="pmv">${d.heatIndex}°C</div><div class="pml">HI</div></div><div class="pmb"><div class="pmv">${d.temperature}°C</div><div class="pml">Temp</div></div></div></div>`);
+      ly.bindPopup(`<div style="min-width:160px"><strong>${n}</strong><br>HI: ${d.heatIndex}°C (${r.l} Risk)</div>`);
     }
   }).addTo(map);
   if(geoL.getBounds().isValid()) map.fitBounds(geoL.getBounds());
@@ -211,7 +193,6 @@ function updateUI(){
   const S=Object.values(BS); if(!S.length)return;
   const avg=k=>(S.reduce((s,b)=>s+b[k],0)/S.length);
   const aHI=avg('heatIndex').toFixed(1), or=riskOf(+aHI), rd=RL[or];
-  
   document.getElementById('bigHI').textContent=Math.round(aHI);
   document.getElementById('bigHI').style.color=rd.c;
   document.getElementById('rBadge').textContent=rd.l.toUpperCase();
@@ -223,11 +204,9 @@ function updateUI(){
   document.getElementById('mHum').textContent=avg('humidity').toFixed(0)+'%';
   document.getElementById('mRisk').textContent=S.filter(b=>b.risk!=='low').length;
   document.getElementById('bCount').textContent=S.length+' Brgy';
-  
   document.getElementById('oHI').textContent=Math.round(aHI)+'°C';
   document.getElementById('oW').textContent=avg('wbgt').toFixed(1)+'°C';
   document.getElementById('oR').textContent=rd.l;
-
   const sorted=Object.entries(BS).sort((a,b)=>b[1].heatIndex-a[1].heatIndex);
   document.getElementById('bList').innerHTML=sorted.map(([n,d])=>{
     return `<div class="bitem"><div class="bname"><span class="bdot" style="background:${RL[d.risk].c}"></span><span>${n}</span></div><span class="bval" style="color:${RL[d.risk].c}">${d.heatIndex}°C</span></div>`;
@@ -238,8 +217,8 @@ function clk(){document.getElementById('clock').textContent=new Date().toLocaleS
 setInterval(clk,1000); clk();
 
 window.onload = () => {
-  fetch('NaicSHP2.geojson').then(r=>r.json()).then(processGeo).catch(()=>console.log("Waiting for manual upload..."));
-  setInterval(fetchLive, 300000); // Sync every 5 mins
+  fetch('NaicSHP2.geojson').then(r=>r.json()).then(processGeo).catch(()=>console.log("Waiting for data..."));
+  setInterval(fetchLive, 300000);
 };
 </script>
 </body>
