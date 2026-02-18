@@ -327,10 +327,25 @@ function processGeo(geo) {
 }
 
 // ── WEATHER CALC ───────────────────────────────────────────────────────────
-function calcHI(T, R) {
-  return -8.78469475556+1.61139411*T+2.33854883889*R-0.14611605*T*R
-         -0.012308094*T*T-0.0164248277778*R*R+0.002211732*T*T*R
-         +0.00072546*T*R*R-0.000003582*T*T*R*R;
+// ── UNIT HELPERS ───────────────────────────────────────────────────────────
+const fToC = f => (f - 32) * 5 / 9;
+
+/**
+ * Compute Heat Index using the NOAA Rothfusz regression (Fahrenheit inputs).
+ * IMPORTANT: NOAA specifies this formula is only valid when T >= 80°F AND RH >= 40%.
+ * Below that threshold, the HI is not meaningfully different from the actual temperature.
+ */
+function calcHI_F(Tf, RH) {
+  if (Tf < 80 || RH < 40) return Tf; // below threshold → HI equals actual temp
+  return -42.379
+       + 2.04901523   * Tf
+       + 10.14333127  * RH
+       - 0.22475541   * Tf * RH
+       - 0.00683783   * Tf * Tf
+       - 0.05481717   * RH * RH
+       + 0.00122874   * Tf * Tf * RH
+       + 0.00085282   * Tf * RH * RH
+       - 0.00000199   * Tf * Tf * RH * RH;
 }
 
 // ── LIVE FETCH ─────────────────────────────────────────────────────────────
@@ -339,20 +354,42 @@ async function fetchLive() {
     const res  = await fetch(GOOGLE_API_URL);
     const json = await res.json();
     if (json.raw_data?.data) {
-      const d     = json.raw_data.data;
-      const cTemp = (parseFloat(d.outdoor.temperature.value)-32)*5/9;
-      const cWbgt = (parseFloat(d.black_globe_temperature.wbgt.value)-32)*5/9;
-      const cHum  = parseFloat(d.outdoor.humidity.value);
-      const hi    = calcHI(cTemp, cHum);
-      applyLive(hi, cWbgt, cTemp, cHum);
+      const d = json.raw_data.data;
+
+      // ── Temperature & Humidity (raw °F from station) ──────────────────
+      const tempF  = parseFloat(d.outdoor.temperature.value);   // actual temperature °F
+      const humPct = parseFloat(d.outdoor.humidity.value);      // relative humidity %
+
+      // ── Heat Index ────────────────────────────────────────────────────
+      // Strategy: prefer the station's own pre-computed feels_like value.
+      // The station (Ecowitt) applies the correct threshold internally,
+      // so feels_like == temp when T < 80°F, and == HI formula when T >= 80°F.
+      // We also cross-check with our own formula (with proper threshold guard)
+      // and use whichever is greater to avoid underreporting.
+      const stationHI_F  = parseFloat(d.outdoor.feels_like.value);  // station's HI (°F)
+      const computedHI_F = calcHI_F(tempF, humPct);                 // our formula (°F)
+      const finalHI_F    = Math.max(stationHI_F, computedHI_F);     // conservative max
+      const cHI          = fToC(finalHI_F);                          // → °C
+
+      // ── WBGT ──────────────────────────────────────────────────────────
+      const cWbgt = fToC(parseFloat(d.black_globe_temperature.wbgt.value));
+
+      // ── Ambient temperature & humidity ────────────────────────────────
+      const cTemp = fToC(tempF);
+
+      applyLive(cHI, cWbgt, cTemp, humPct);
+
       const t = new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true});
-      document.getElementById('cStat').textContent      = 'Live · '+t;
+      document.getElementById('cStat').textContent       = 'Live · '+t;
       document.getElementById('stationTime').textContent = t;
-      document.getElementById('cDot').style.background  = 'var(--green)';
+      document.getElementById('cDot').style.background   = 'var(--green)';
+
+      // Debug: log values to console for verification
+      console.log(`[HeatGuard] Temp: ${tempF}°F (${cTemp.toFixed(1)}°C) | RH: ${humPct}% | Station HI: ${stationHI_F}°F | Computed HI: ${computedHI_F.toFixed(1)}°F | Final HI: ${finalHI_F.toFixed(1)}°F (${cHI.toFixed(1)}°C) | WBGT: ${cWbgt.toFixed(1)}°C`);
     }
   } catch(e) {
     console.error("API Error", e);
-    document.getElementById('cStat').textContent  = 'Offline · retrying…';
+    document.getElementById('cStat').textContent   = 'Offline · retrying…';
     document.getElementById('cDot').style.background = 'var(--red)';
   }
 }
