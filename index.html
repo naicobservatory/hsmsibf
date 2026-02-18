@@ -10,7 +10,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 <style>
-/* (Styles preserved from original index (4).html) */
 :root{--bg-primary:#0a0e17;--bg-secondary:#111827;--bg-card:#1a2235;--border:#2a3550;--text-primary:#e8ecf4;--text-secondary:#8899b4;--text-muted:#5a6a85;--accent:#3b82f6;--green:#22c55e;--green-bg:rgba(34,197,94,.12);--yellow:#facc15;--yellow-bg:rgba(250,204,21,.12);--orange:#f97316;--orange-bg:rgba(249,115,22,.12);--red:#ef4444;--red-bg:rgba(239,68,68,.12)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow:hidden;height:100vh}
@@ -55,9 +54,7 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
 .spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .ltxt2{font-size:13px;color:var(--text-secondary);text-align:center;max-width:300px;line-height:1.6}
-/* Specific Leaflet Control Theming */
 .leaflet-control-layers { background: var(--bg-card) !important; color: var(--text-primary) !important; border: 1px solid var(--border) !important; border-radius: 8px !important; }
-.leaflet-control-layers-expanded { padding: 10px !important; }
 </style>
 </head>
 <body>
@@ -104,6 +101,7 @@ const BRGY_NAMES = ["Bagong Karsada","Balsahan","Bancaan","Bucana Malaki","Bucan
 
 // Map Layer Definitions
 const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' });
+const grey = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' });
 const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
 const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
 const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' });
@@ -118,6 +116,7 @@ const map = L.map('map', {
 
 const baseMaps = {
   "Dark Mode": dark,
+  "Light Grey": grey,
   "Standard Streets": streets,
   "Satellite Imagery": satellite,
   "Topographic": topo
