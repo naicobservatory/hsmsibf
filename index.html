@@ -10,10 +10,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg-primary:#0a0e17;--bg-secondary:#111827;--bg-card:#1a2235;--border:#2a3550;--text-primary:#e8ecf4;--text-secondary:#8899b4;--text-muted:#5a6a85;--accent:#3b82f6;--green:#22c55e;--green-bg:rgba(34,197,94,.12);--yellow:#facc15;--yellow-bg:rgba(250,204,21,.12);--orange:#f97316;--orange-bg:rgba(249,115,22,.12);--red:#ef4444;--red-bg:rgba(239,68,68,.12)}
+:root{
+  --bg-primary:#0a0e17;
+  --bg-secondary:#111827;
+  --bg-card:#1a2235;
+  --border:#2a3550;
+  --text-primary:#e8ecf4;
+  --text-secondary:#8899b4;
+  --text-muted:#5a6a85;
+  --accent:#3b82f6;
+  --green:#22c55e;
+  --green-bg:rgba(34,197,94,.12);
+  --yellow:#facc15;
+  --yellow-bg:rgba(250,204,21,.12);
+  --orange:#f97316;
+  --orange-bg:rgba(249,115,22,.12);
+  --red:#ef4444;
+  --red-bg:rgba(239,68,68,.12)
+}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow:hidden;height:100vh}
 .app{display:grid;grid-template-columns:380px 1fr;grid-template-rows:64px 1fr;height:100vh}
+
+/* ── Header ── */
 header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:1000}
 .brand{display:flex;align-items:center;gap:14px}
 .brand-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--orange),var(--red));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
@@ -24,6 +43,8 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
 .clock{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-secondary)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Sidebar ── */
 .sidebar{background:var(--bg-secondary);border-right:1px solid var(--border);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:18px}
 .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -38,38 +59,91 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
 .mbox{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:12px;text-align:center}
 .mval{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600}
 .mlbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-top:4px}
+
+/* ── Barangay list ── */
 .blist{display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto}
 .bitem{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;font-size:12px}
 .bitem:hover{background:rgba(255,255,255,.05)}
 .bname{display:flex;align-items:center;gap:8px}
 .bdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .bval{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:12px}
+
+/* ── Legend card ── */
+.legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.legend-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.06);font-size:11px}
+.legend-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+/* ── Map area ── */
 .mapc{position:relative}
 #map{width:100%;height:100%;background:#0d1320}
 .movl{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:800;background:rgba(17,24,39,.88);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;padding:10px 20px;display:flex;align-items:center;gap:16px;pointer-events:none}
-.os{text-align:center}.osv{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700}.osl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted)}
+.os{text-align:center}
+.osv{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700}
+.osl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted)}
 .odiv{width:1px;height:30px;background:var(--border)}
+
+/* ── Loading overlay ── */
 .lov{position:absolute;inset:0;background:rgba(10,14,23,.92);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .5s}
 .lov.h{opacity:0;pointer-events:none}
 .spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
+.ltxt{font-size:16px;font-weight:600}
 .ltxt2{font-size:13px;color:var(--text-secondary);text-align:center;max-width:300px;line-height:1.6}
-.leaflet-control-layers { background: var(--bg-card) !important; color: var(--text-primary) !important; border: 1px solid var(--border) !important; border-radius: 8px !important; }
+
+/* ── DB status banner ── */
+.db-status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:11px;border:1px solid;margin-bottom:0}
+.db-status.ok{background:var(--green-bg);border-color:rgba(34,197,94,.3);color:var(--green)}
+.db-status.warn{background:var(--yellow-bg);border-color:rgba(250,204,21,.3);color:var(--yellow)}
+.db-status.err{background:var(--red-bg);border-color:rgba(239,68,68,.3);color:var(--red)}
+
+/* ── Leaflet overrides ── */
+.leaflet-control-layers{background:var(--bg-card)!important;color:var(--text-primary)!important;border:1px solid var(--border)!important;border-radius:8px!important}
+.leaflet-popup-content-wrapper{background:#1a2235;border:1px solid #2a3550;color:#e8ecf4;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.leaflet-popup-tip{background:#1a2235}
 </style>
 </head>
 <body>
 <div class="app">
+
+  <!-- ── Header ── -->
   <header>
-    <div class="brand"><div class="brand-icon">🌡</div><div><h1>HeatGuard Naic</h1><small>Impact-Based Heat Stress Portal</small></div></div>
+    <div class="brand">
+      <div class="brand-icon">🌡</div>
+      <div>
+        <h1>HeatGuard Naic</h1>
+        <small>Impact-Based Heat Stress Portal</small>
+      </div>
+    </div>
     <div class="hstatus">
-      <div class="chip"><span class="dot" id="cDot"></span><span id="cStat">Live Monitoring</span></div>
+      <div class="chip"><span class="dot" id="cDot"></span><span id="cStat">Initializing…</span></div>
       <div class="clock" id="clock"></div>
     </div>
   </header>
+
+  <!-- ── Sidebar ── -->
   <aside class="sidebar">
+
+    <!-- DB Status -->
+    <div class="db-status warn" id="dbStatus">
+      ⏳ Loading impact matrix database…
+    </div>
+
+    <!-- Municipal Risk Summary -->
     <div class="card">
-      <div class="card-h"><span class="card-l">Municipal Risk Level</span><span class="badge" id="rBadge">LOADING</span></div>
-      <div class="rsum"><div><span class="rbig" id="bigHI">--</span><span class="runit">°C HI</span></div><div><div class="rlabel" id="rTitle">Connecting...</div><div class="rsub" id="rDesc">Syncing with Google Cloud API</div></div></div>
+      <div class="card-h">
+        <span class="card-l">Municipal Risk Level</span>
+        <span class="badge" id="rBadge">LOADING</span>
+      </div>
+      <div class="rsum">
+        <div>
+          <span class="rbig" id="bigHI">--</span>
+          <span class="runit">°C HI</span>
+        </div>
+        <div>
+          <div class="rlabel" id="rTitle">Connecting…</div>
+          <div class="rsub" id="rDesc">Syncing with Google Cloud API</div>
+        </div>
+      </div>
       <div class="mgrid">
         <div class="mbox"><div class="mval" id="mWBGT">--</div><div class="mlbl">Avg WBGT °C</div></div>
         <div class="mbox"><div class="mval" id="mTemp">--</div><div class="mlbl">Avg Temp °C</div></div>
@@ -77,147 +151,446 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
         <div class="mbox"><div class="mval" id="mRisk">--</div><div class="mlbl">Brgy at Risk</div></div>
       </div>
     </div>
+
+    <!-- Risk Legend -->
     <div class="card">
-      <div class="card-h"><span class="card-l">Barangay Status</span><span class="badge" id="bCount" style="background:rgba(59,130,246,.15);color:var(--accent)">--</span></div>
+      <div class="card-h"><span class="card-l">Impact Risk Legend</span></div>
+      <div class="legend-grid">
+        <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div><span>Low — Safe</span></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#facc15"></div><span>Moderate</span></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#f97316"></div><span>High Risk</span></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div><span>Extreme</span></div>
+      </div>
+    </div>
+
+    <!-- Barangay List -->
+    <div class="card">
+      <div class="card-h">
+        <span class="card-l">Barangay Status</span>
+        <span class="badge" id="bCount" style="background:rgba(59,130,246,.15);color:var(--accent)">--</span>
+      </div>
       <div class="blist" id="bList"></div>
     </div>
+
   </aside>
+
+  <!-- ── Map ── -->
   <main class="mapc">
     <div class="movl">
-      <div class="os"><div class="osv">Naic, Cavite</div><div class="osl">Municipality</div></div><div class="odiv"></div>
-      <div class="os"><div class="osv" id="oHI">--</div><div class="osl">Heat Index</div></div><div class="odiv"></div>
-      <div class="os"><div class="osv" id="oW">--</div><div class="osl">WBGT</div></div><div class="odiv"></div>
+      <div class="os"><div class="osv">Naic, Cavite</div><div class="osl">Municipality</div></div>
+      <div class="odiv"></div>
+      <div class="os"><div class="osv" id="oHI">--</div><div class="osl">Heat Index</div></div>
+      <div class="odiv"></div>
+      <div class="os"><div class="osv" id="oW">--</div><div class="osl">WBGT</div></div>
+      <div class="odiv"></div>
       <div class="os"><div class="osv" id="oR">--</div><div class="osl">Overall Risk</div></div>
     </div>
-    <div class="lov" id="loadOv"><div class="spin"></div><div class="ltxt2"><strong>Syncing Live Data</strong><br>Retrieving observations...</div></div>
+    <div class="lov" id="loadOv">
+      <div class="spin"></div>
+      <div class="ltxt">Loading HeatGuard</div>
+      <div class="ltxt2">Fetching impact matrix database and live weather data. Please wait…</div>
+    </div>
     <div id="map"></div>
   </main>
+
 </div>
 
 <script>
+// ════════════════════════════════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════════════════════════════════
 const GOOGLE_API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrQNVWBzA3cFbrbFaGdf1ErdVWGXpESBZpfr-he6WWLyDSPVNTqPoD7tOpepczUbCwjfI49A9wKqQUK5gI6nO6CfSL0IYTCfqY6rlbBklqKT_fM6okwWWgSYlcHC67Ytvu34zm15_7CqWPEQizwJGFy00lEDai77DnGq5TmoDehrNpQNvlslQMG3JfVUs9GO3FwolUvCgJE3wN_P6ecT-gbsVrB5_-w4hpdY1I9HdG13rsPu82L-g8YL0H26CqrP3IIpeK78rYwyWKQD0rwpBHFLWtWXay8QHSrFcZ6Z&lib=MTbhs9Zv5KTG9ImKpSDDDPCIObk80Qa1W";
 
-const BRGY_NAMES = ["Bagong Karsada","Balsahan","Bancaan","Bucana Malaki","Bucana Sasahan","Calubcob","Capt. C. Nazareno","Gomez-Zamora","Halang","Humbac","Ibayo Estacion","Ibayo Silangan","Kanluran","Labac","Latoria","Mabolo","Makina","Malainen Bago","Malainen Luma","Molino","Munting Mapino","Muzon","Palangue 1","Palangue 2 & 3","Sabang","San Roque","Santulan","Sapa","Timalan Balsahan","Timalan Concepcion"];
+const IMPACT_MATRIX_URL = "barangay_impact_matrix.json"; // served from same repo
+const GEOJSON_URL       = "NaicSHP2.geojson";
+const REFRESH_MS        = 300000; // 5 min live refresh
 
-// Map Layer Definitions
-const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' });
-const grey = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' });
-const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
-const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
-const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' });
+const BRGY_NAMES = [
+  "Bagong Karsada","Balsahan","Bancaan","Bucana Malaki","Bucana Sasahan",
+  "Calubcob","Capt. C. Nazareno","Gomez-Zamora","Halang","Humbac",
+  "Ibayo Estacion","Ibayo Silangan","Kanluran","Labac","Latoria",
+  "Mabolo","Makina","Malainen Bago","Malainen Luma","Molino",
+  "Munting Mapino","Muzon","Palangue 1","Palangue 2 & 3","Sabang",
+  "San Roque","Santulan","Sapa","Timalan Balsahan","Timalan Concepcion"
+];
 
-let BS={}, geoL=null, geoData=null;
+// ════════════════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════════════════
+let BS      = {};   // barangay data store
+let geoL    = null; // leaflet geojson layer
+let geoData = null; // parsed geojson
+let MATRIX  = null; // impact matrix database
 
-const map = L.map('map', {
-  center: [14.3167, 120.7667],
-  zoom: 13,
-  layers: [dark]
-});
+// ════════════════════════════════════════════════════════════════════════════
+//  MAP SETUP
+// ════════════════════════════════════════════════════════════════════════════
+const dark      = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',      {attribution:'© CARTO'});
+const grey      = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',     {attribution:'© CARTO'});
+const streets   = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',                 {attribution:'© OpenStreetMap'});
+const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {attribution:'© Esri'});
+const topo      = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',                   {attribution:'© OpenTopoMap'});
 
-const baseMaps = {
-  "Dark Mode": dark,
-  "Light Grey": grey,
-  "Standard Streets": streets,
-  "Satellite Imagery": satellite,
-  "Topographic": topo
-};
+const map = L.map('map', {center:[14.3167, 120.7667], zoom:13, layers:[dark]});
+L.control.layers({
+  "Dark Mode":          dark,
+  "Light Grey":         grey,
+  "Standard Streets":   streets,
+  "Satellite Imagery":  satellite,
+  "Topographic":        topo
+}, null, {position:'topright'}).addTo(map);
 
-L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
-
-function matchBrgyName(n){if(!n)return null;let c=String(n).replace(/^(Barangay|Brgy\.?)\s+/i,'').trim();if(BRGY_NAMES.includes(c))return c;let l=c.toLowerCase();return BRGY_NAMES.find(x=>x.toLowerCase()===l)||null}
-
+// ════════════════════════════════════════════════════════════════════════════
+//  RISK CONFIG
+// ════════════════════════════════════════════════════════════════════════════
 const RL = {
-  low:{l:"Low",c:"#22c55e",bg:"rgba(34,197,94,.12)",i:"✅",d:"No significant risk",a:"Normal outdoor activities. Stay hydrated."},
-  moderate:{l:"Moderate",c:"#facc15",bg:"rgba(250,204,21,.12)",i:"⚠️",d:"Fatigue possible with exposure",a:"Limit prolonged sun exposure."},
-  high:{l:"High",c:"#f97316",bg:"rgba(249,115,22,.12)",i:"🔶",d:"Heat cramps & exhaustion likely",a:"Avoid outdoor work 10AM-3PM."},
-  extreme:{l:"Extreme",c:"#ef4444",bg:"rgba(239,68,68,.12)",i:"🔴",d:"Heat stroke danger",a:"EMERGENCY: Suspend outdoor activities."}
+  low:      {l:"Low",      c:"#22c55e", bg:"rgba(34,197,94,.12)",  d:"No significant risk",            a:"Normal outdoor activities. Stay hydrated."},
+  moderate: {l:"Moderate", c:"#facc15", bg:"rgba(250,204,21,.12)", d:"Fatigue possible with exposure",  a:"Limit prolonged sun exposure. Take breaks."},
+  high:     {l:"High",     c:"#f97316", bg:"rgba(249,115,22,.12)", d:"Heat cramps & exhaustion likely", a:"Avoid outdoor work 10AM–3PM. Use cooling stations."},
+  extreme:  {l:"Extreme",  c:"#ef4444", bg:"rgba(239,68,68,.12)",  d:"Heat stroke danger",              a:"EMERGENCY: Suspend all outdoor activities."}
 };
 
-function riskOf(h){return h>=42?"extreme":h>=33?"high":h>=27?"moderate":"low"}
-function calcHI(T,R){return -8.78469475556+1.61139411*T+2.33854883889*R-.14611605*T*R-.012308094*T*T-.0164248277778*R*R+.002211732*T*T*R+.00072546*T*R*R-.000003582*T*T*R*R}
+const RISK_RANK = {low:1, moderate:2, high:3, extreme:4};
 
-function processGeo(geo){
-  const chosen=[]; const used=new Set();
-  geo.features.forEach(f=>{
-    let r=f.properties.NAME_3||f.properties.ADM4_EN||f.properties.barangay||f.properties.name||'';
-    let m=matchBrgyName(r); let d=m||r||('Area '+(chosen.length+1));
-    f.properties._dn=d; if(!used.has(d)){used.add(d); chosen.push(f);}
+// ════════════════════════════════════════════════════════════════════════════
+//  IMPACT MATRIX LOGIC
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Returns 0-based tier index for a given value against sorted thresholds.
+ * e.g. thresholds [27, 33, 42] → value 30 returns tier 1 (27-33 bucket)
+ */
+function getTier(value, thresholds) {
+  for (let i = 0; i < thresholds.length; i++) {
+    if (value < thresholds[i]) return i;
+  }
+  return thresholds.length; // above all thresholds → highest tier
+}
+
+/**
+ * Computes vulnerability modifier for a barangay.
+ * Returns a float that adjusts the base matrix score up or down.
+ * Positive = more vulnerable, Negative = more resilient.
+ *
+ * Factors:
+ *   outdoor_workers  (0-1): people exposed to outdoor heat → increases risk
+ *   elderly_pct      (0-1): sensitive population → increases risk
+ *   green_cover      (0-1): tree/vegetation coverage → DECREASES risk
+ *   urban_heat       (0-1): impervious surfaces, concrete → increases risk
+ */
+function vulnerabilityModifier(brgyData) {
+  if (!brgyData) return 0;
+  const { outdoor_workers = 0, elderly_pct = 0, green_cover = 0, urban_heat = 0 } = brgyData;
+  return (outdoor_workers * 0.30)   // exposure weight
+       + (elderly_pct    * 0.50)   // sensitivity weight (elderly_pct is 0-1, not 0-100)
+       + (urban_heat     * 0.30)   // urban heat island amplification
+       - (green_cover    * 0.40);  // protective factor
+}
+
+/**
+ * Main function: given live HI + WBGT readings and a barangay name,
+ * returns the final impact risk label ("low"|"moderate"|"high"|"extreme")
+ * using the 2D matrix + per-barangay vulnerability profile.
+ */
+function getImpactRisk(hi, wbgt, brgyName) {
+  // Fallback if database failed to load
+  if (!MATRIX) {
+    if (hi >= 42) return "extreme";
+    if (hi >= 33) return "high";
+    if (hi >= 27) return "moderate";
+    return "low";
+  }
+
+  const hiTier   = getTier(hi,   MATRIX.hi_thresholds);
+  const wbgtTier = getTier(wbgt, MATRIX.wbgt_thresholds);
+
+  // Clamp to matrix bounds
+  const r = Math.min(hiTier,   MATRIX.impact_matrix.length - 1);
+  const c = Math.min(wbgtTier, MATRIX.impact_matrix[0].length - 1);
+
+  const baseScore = MATRIX.impact_matrix[r][c]; // integer 1–4
+
+  // Apply per-barangay vulnerability modifier
+  const brgyData      = MATRIX.barangays[brgyName];
+  const mod           = vulnerabilityModifier(brgyData);
+  const adjustedScore = baseScore + mod;
+
+  // Clamp to 1–4 and map to label
+  const finalScore = Math.min(4, Math.max(1, Math.round(adjustedScore)));
+  return MATRIX.risk_labels[String(finalScore)] || "moderate";
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  GEO HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+function matchBrgyName(n) {
+  if (!n) return null;
+  const c = String(n).replace(/^(Barangay|Brgy\.?)\s+/i, '').trim();
+  if (BRGY_NAMES.includes(c)) return c;
+  const l = c.toLowerCase();
+  return BRGY_NAMES.find(x => x.toLowerCase() === l) || null;
+}
+
+function processGeo(geo) {
+  const chosen = [], used = new Set();
+  geo.features.forEach(f => {
+    const raw = f.properties.NAME_3 || f.properties.ADM4_EN || f.properties.barangay || f.properties.name || '';
+    const matched = matchBrgyName(raw);
+    const displayName = matched || raw || ('Area ' + (chosen.length + 1));
+    f.properties._dn = displayName;
+    if (!used.has(displayName)) { used.add(displayName); chosen.push(f); }
   });
-  geoData={type:'FeatureCollection',features:chosen};
+  geoData = { type: 'FeatureCollection', features: chosen };
   fetchLive();
   document.getElementById('loadOv').classList.add('h');
 }
 
-async function fetchLive(){
+// ════════════════════════════════════════════════════════════════════════════
+//  WEATHER CALCULATIONS
+// ════════════════════════════════════════════════════════════════════════════
+function calcHI(T, R) {
+  // Steadman Heat Index formula (°C in, °C out)
+  return -8.78469475556
+       + 1.61139411   * T
+       + 2.33854883889 * R
+       - 0.14611605   * T * R
+       - 0.012308094  * T * T
+       - 0.0164248277778 * R * R
+       + 0.002211732  * T * T * R
+       + 0.00072546   * T * R * R
+       - 0.000003582  * T * T * R * R;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  LIVE DATA FETCH
+// ════════════════════════════════════════════════════════════════════════════
+async function fetchLive() {
   try {
-    const res = await fetch(GOOGLE_API_URL);
+    const res  = await fetch(GOOGLE_API_URL);
     const json = await res.json();
-    if(json.raw_data && json.raw_data.data){
-      const d = json.raw_data.data;
-      const cTemp = (parseFloat(d.outdoor.temperature.value) - 32) * 5/9;
-      const cWbgt = (parseFloat(d.black_globe_temperature.wbgt.value) - 32) * 5/9;
-      const hi = calcHI(cTemp, parseFloat(d.outdoor.humidity.value));
-      applyLive(hi, cWbgt, cTemp, parseFloat(d.outdoor.humidity.value));
-      document.getElementById('cStat').textContent = 'Live: ' + new Date().toLocaleTimeString();
+    if (json.raw_data?.data) {
+      const d     = json.raw_data.data;
+      const cTemp = (parseFloat(d.outdoor.temperature.value) - 32) * 5 / 9;
+      const cWbgt = (parseFloat(d.black_globe_temperature.wbgt.value) - 32) * 5 / 9;
+      const cHum  = parseFloat(d.outdoor.humidity.value);
+      const hi    = calcHI(cTemp, cHum);
+      applyLive(hi, cWbgt, cTemp, cHum);
+      document.getElementById('cStat').textContent = 'Live · ' + new Date().toLocaleTimeString();
     }
-  } catch(e) { console.error("API Error", e); }
+  } catch(e) {
+    console.error("API Error", e);
+    document.getElementById('cStat').textContent = 'Offline · retrying…';
+    document.getElementById('cDot').style.background = 'var(--red)';
+  }
 }
 
-function applyLive(bHI,bW,bT,bH){
-  if(!geoData)return;
-  geoData.features.forEach(f=>{
-    const n=f.properties._dn;
-    const v=(Math.random()-.5)*3; 
-    BS[n]={heatIndex: +(bHI+v).toFixed(1),wbgt: +(bW+v*.7).toFixed(1),temperature: +(bT+v*.5).toFixed(1),humidity: +bH.toFixed(0),risk: riskOf(bHI+v)};
+// ════════════════════════════════════════════════════════════════════════════
+//  CORE: APPLY LIVE READINGS → IMPACT MATRIX → PER-BRGY RISK
+// ════════════════════════════════════════════════════════════════════════════
+function applyLive(bHI, bW, bT, bH) {
+  if (!geoData) return;
+
+  geoData.features.forEach(f => {
+    const n = f.properties._dn;
+
+    // Spatial variation: ±1.5°C around station reading
+    // Replace with real spatial interpolation data when available
+    const v = (Math.random() - 0.5) * 3;
+
+    const localHI   = +(bHI + v).toFixed(1);
+    const localWBGT = +(bW  + v * 0.7).toFixed(1);
+
+    // ← KEY: risk determined by impact matrix + vulnerability profile
+    const impactRisk = getImpactRisk(localHI, localWBGT, n);
+
+    // Vulnerability details for popup display
+    const brgyVul = MATRIX?.barangays[n];
+    const modVal  = brgyVul ? vulnerabilityModifier(brgyVul).toFixed(2) : null;
+
+    BS[n] = {
+      heatIndex:   localHI,
+      wbgt:        localWBGT,
+      temperature: +(bT + v * 0.5).toFixed(1),
+      humidity:    +bH.toFixed(0),
+      risk:        impactRisk,
+      vulMod:      modVal,
+      hiTier:      getTier(localHI,   MATRIX?.hi_thresholds   || [27,33,42]),
+      wbgtTier:    getTier(localWBGT, MATRIX?.wbgt_thresholds || [18,25,28])
+    };
   });
-  render(); updateUI();
+
+  render();
+  updateUI();
 }
 
-function render(){
-  if(geoL) map.removeLayer(geoL);
-  geoL=L.geoJSON(geoData,{
-    style:f=>{
-      let r=BS[f.properties._dn]?.risk||'low';
-      return{fillColor:RL[r].c,fillOpacity:0.45,color:RL[r].c,weight:2,opacity:0.85}
+// ════════════════════════════════════════════════════════════════════════════
+//  MAP RENDER
+// ════════════════════════════════════════════════════════════════════════════
+function render() {
+  if (geoL) map.removeLayer(geoL);
+
+  geoL = L.geoJSON(geoData, {
+    style: f => {
+      const risk = BS[f.properties._dn]?.risk || 'low';
+      return {
+        fillColor:   RL[risk].c,
+        fillOpacity: 0.50,
+        color:       RL[risk].c,
+        weight:      2,
+        opacity:     0.90
+      };
     },
-    onEachFeature:(f,ly)=>{
-      const n=f.properties._dn, d=BS[n], r=RL[d.risk];
-      ly.bindPopup(`<div style="min-width:160px"><strong>${n}</strong><br>HI: ${d.heatIndex}°C (${r.l} Risk)</div>`);
+    onEachFeature: (f, ly) => {
+      const n   = f.properties._dn;
+      const d   = BS[n];
+      const r   = RL[d?.risk || 'low'];
+      const vul = MATRIX?.barangays[n];
+
+      // Build vulnerability breakdown string
+      let vulRows = '';
+      if (vul) {
+        vulRows = `
+          <tr><td colspan="2" style="padding-top:6px;color:#5a6a85;font-size:10px;text-transform:uppercase;letter-spacing:1px">Vulnerability Profile</td></tr>
+          <tr><td style="color:#888">Outdoor Workers</td><td style="text-align:right">${(vul.outdoor_workers*100).toFixed(0)}%</td></tr>
+          <tr><td style="color:#888">Elderly Pop.</td><td style="text-align:right">${(vul.elderly_pct*100).toFixed(0)}%</td></tr>
+          <tr><td style="color:#888">Green Cover</td><td style="text-align:right">${(vul.green_cover*100).toFixed(0)}%</td></tr>
+          <tr><td style="color:#888">Urban Heat Idx</td><td style="text-align:right">${(vul.urban_heat*100).toFixed(0)}/100</td></tr>
+          <tr><td style="color:#888">Vul. Modifier</td><td style="text-align:right">${d.vulMod !== null ? (d.vulMod > 0 ? '+' : '') + d.vulMod : 'N/A'}</td></tr>`;
+      }
+
+      ly.bindPopup(`
+        <div style="min-width:200px;font-family:'DM Sans',sans-serif">
+          <strong style="font-size:14px">${n}</strong>
+          <hr style="border-color:#2a3550;margin:6px 0">
+          <table style="font-size:12px;width:100%;border-collapse:collapse;line-height:1.8">
+            <tr><td style="color:#888">Heat Index</td><td style="text-align:right;font-weight:700">${d.heatIndex}°C</td></tr>
+            <tr><td style="color:#888">WBGT</td><td style="text-align:right;font-weight:700">${d.wbgt}°C</td></tr>
+            <tr><td style="color:#888">Temperature</td><td style="text-align:right">${d.temperature}°C</td></tr>
+            <tr><td style="color:#888">Humidity</td><td style="text-align:right">${d.humidity}%</td></tr>
+            ${vulRows}
+          </table>
+          <div style="margin-top:10px;padding:8px 10px;background:${r.bg};border:1px solid ${r.c}33;border-radius:8px">
+            <div style="font-weight:700;color:${r.c};font-size:13px">${r.l} Risk</div>
+            <div style="font-size:11px;color:#8899b4;margin-top:2px">${r.a}</div>
+          </div>
+        </div>`, { maxWidth: 240 });
     }
   }).addTo(map);
-  if(geoL.getBounds().isValid()) map.fitBounds(geoL.getBounds());
+
+  if (geoL.getBounds().isValid()) map.fitBounds(geoL.getBounds());
 }
 
-function updateUI(){
-  const S=Object.values(BS); if(!S.length)return;
-  const avg=k=>(S.reduce((s,b)=>s+b[k],0)/S.length);
-  const aHI=avg('heatIndex').toFixed(1), or=riskOf(+aHI), rd=RL[or];
-  document.getElementById('bigHI').textContent=Math.round(aHI);
-  document.getElementById('bigHI').style.color=rd.c;
-  document.getElementById('rBadge').textContent=rd.l.toUpperCase();
-  document.getElementById('rBadge').style.background=rd.bg;
-  document.getElementById('rBadge').style.color=rd.c;
-  document.getElementById('rTitle').textContent=rd.l+' Risk';
-  document.getElementById('mWBGT').textContent=avg('wbgt').toFixed(1);
-  document.getElementById('mTemp').textContent=avg('temperature').toFixed(1);
-  document.getElementById('mHum').textContent=avg('humidity').toFixed(0)+'%';
-  document.getElementById('mRisk').textContent=S.filter(b=>b.risk!=='low').length;
-  document.getElementById('bCount').textContent=S.length+' Brgy';
-  document.getElementById('oHI').textContent=Math.round(aHI)+'°C';
-  document.getElementById('oW').textContent=avg('wbgt').toFixed(1)+'°C';
-  document.getElementById('oR').textContent=rd.l;
-  const sorted=Object.entries(BS).sort((a,b)=>b[1].heatIndex-a[1].heatIndex);
-  document.getElementById('bList').innerHTML=sorted.map(([n,d])=>{
-    return `<div class="bitem"><div class="bname"><span class="bdot" style="background:${RL[d.risk].c}"></span><span>${n}</span></div><span class="bval" style="color:${RL[d.risk].c}">${d.heatIndex}°C</span></div>`;
-  }).join('');
+// ════════════════════════════════════════════════════════════════════════════
+//  SIDEBAR UI UPDATE
+// ════════════════════════════════════════════════════════════════════════════
+function updateUI() {
+  const S = Object.values(BS);
+  if (!S.length) return;
+
+  const avg = k => S.reduce((s, b) => s + b[k], 0) / S.length;
+  const aHI = avg('heatIndex');
+
+  // Municipal overall risk = worst risk level present across all barangays
+  const worst = S.reduce((w, b) => RISK_RANK[b.risk] > RISK_RANK[w] ? b.risk : w, 'low');
+  const rd = RL[worst];
+
+  // Header stats
+  document.getElementById('bigHI').textContent  = Math.round(aHI);
+  document.getElementById('bigHI').style.color  = rd.c;
+  document.getElementById('rBadge').textContent = rd.l.toUpperCase();
+  document.getElementById('rBadge').style.background = rd.bg;
+  document.getElementById('rBadge').style.color      = rd.c;
+  document.getElementById('rTitle').textContent = rd.l + ' Risk';
+  document.getElementById('rDesc').textContent  = rd.d;
+
+  // Metric boxes
+  document.getElementById('mWBGT').textContent = avg('wbgt').toFixed(1);
+  document.getElementById('mTemp').textContent = avg('temperature').toFixed(1);
+  document.getElementById('mHum').textContent  = avg('humidity').toFixed(0) + '%';
+  document.getElementById('mRisk').textContent = S.filter(b => b.risk !== 'low').length;
+
+  // Map overlay
+  document.getElementById('bCount').textContent = S.length + ' Brgy';
+  document.getElementById('oHI').textContent    = Math.round(aHI) + '°C';
+  document.getElementById('oW').textContent     = avg('wbgt').toFixed(1) + '°C';
+  document.getElementById('oR').textContent     = rd.l;
+  document.getElementById('oR').style.color     = rd.c;
+
+  // Barangay list — sorted by risk rank desc, then HI desc
+  const sorted = Object.entries(BS).sort((a, b) =>
+    RISK_RANK[b[1].risk] - RISK_RANK[a[1].risk] || b[1].heatIndex - a[1].heatIndex
+  );
+
+  document.getElementById('bList').innerHTML = sorted.map(([n, d]) => `
+    <div class="bitem" onclick="highlightBrgy('${n.replace(/'/g,"\\'")}')">
+      <div class="bname">
+        <span class="bdot" style="background:${RL[d.risk].c}"></span>
+        <span>${n}</span>
+      </div>
+      <span class="bval" style="color:${RL[d.risk].c}">${d.heatIndex}°C · ${RL[d.risk].l}</span>
+    </div>`).join('');
 }
 
-function clk(){document.getElementById('clock').textContent=new Date().toLocaleString('en-PH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}
-setInterval(clk,1000); clk();
+// ════════════════════════════════════════════════════════════════════════════
+//  BARANGAY HIGHLIGHT (click from list)
+// ════════════════════════════════════════════════════════════════════════════
+function highlightBrgy(name) {
+  if (!geoL) return;
+  geoL.eachLayer(ly => {
+    if (ly.feature?.properties._dn === name) {
+      map.fitBounds(ly.getBounds());
+      ly.openPopup();
+    }
+  });
+}
 
-window.onload = () => {
-  fetch('NaicSHP2.geojson').then(r=>r.json()).then(processGeo).catch(()=>console.log("Waiting for data..."));
-  setInterval(fetchLive, 300000);
+// ════════════════════════════════════════════════════════════════════════════
+//  CLOCK
+// ════════════════════════════════════════════════════════════════════════════
+function clk() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleString('en-PH', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+}
+setInterval(clk, 1000);
+clk();
+
+// ════════════════════════════════════════════════════════════════════════════
+//  INIT — load DB + GeoJSON in parallel
+// ════════════════════════════════════════════════════════════════════════════
+window.onload = async () => {
+  const dbEl = document.getElementById('dbStatus');
+
+  // 1. Load impact matrix database
+  try {
+    const dbRes = await fetch(IMPACT_MATRIX_URL);
+    if (!dbRes.ok) throw new Error(`HTTP ${dbRes.status}`);
+    MATRIX = await dbRes.json();
+    const brgyCount = Object.keys(MATRIX.barangays).length;
+    dbEl.textContent = `✅ Impact matrix loaded — ${brgyCount} barangay profiles`;
+    dbEl.className   = 'db-status ok';
+    console.log(`✅ Impact matrix loaded: ${brgyCount} barangays`);
+  } catch(e) {
+    dbEl.textContent = `⚠️ Impact matrix not found — using basic HI thresholds as fallback`;
+    dbEl.className   = 'db-status warn';
+    console.warn("⚠️ Could not load barangay_impact_matrix.json — fallback mode active.", e);
+  }
+
+  // 2. Load GeoJSON
+  try {
+    const geoRes  = await fetch(GEOJSON_URL);
+    if (!geoRes.ok) throw new Error(`HTTP ${geoRes.status}`);
+    const geoJson = await geoRes.json();
+    processGeo(geoJson);
+  } catch(e) {
+    console.error("❌ Failed to load GeoJSON:", e);
+    document.getElementById('loadOv').innerHTML = `
+      <div style="font-size:32px">⚠️</div>
+      <div class="ltxt">GeoJSON not found</div>
+      <div class="ltxt2">Make sure <code>NaicSHP2.geojson</code> is in the same folder as this HTML file.</div>`;
+  }
+
+  // 3. Schedule live refresh
+  setInterval(fetchLive, REFRESH_MS);
 };
 </script>
 </body>
