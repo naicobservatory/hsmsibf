@@ -79,7 +79,7 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
   <aside class="sidebar">
     <div class="card">
       <div class="card-h"><span class="card-l">Municipal Risk Level</span><span class="badge" id="rBadge">LOADING</span></div>
-      <div class="rsum"><div><span class="rbig" id="bigHI">--</span><span class="runit">°C HI</span></div><div><div class="rlabel" id="rTitle">Connecting...</div><div class="rsub" id="rDesc">Initializing live data stream</div></div></div>
+      <div class="rsum"><div><span class="rbig" id="bigHI">--</span><span class="runit">°C HI</span></div><div><div class="rlabel" id="rTitle">Connecting...</div><div class="rsub" id="rDesc">Syncing with Google Cloud API</div></div></div>
       <div class="mgrid">
         <div class="mbox"><div class="mval" id="mWBGT">--</div><div class="mlbl">Avg WBGT °C</div></div>
         <div class="mbox"><div class="mval" id="mTemp">--</div><div class="mlbl">Avg Temp °C</div></div>
@@ -92,12 +92,12 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
       <div class="blist" id="bList"></div>
     </div>
     <div class="card">
-      <div class="card-h"><span class="card-l">Station Info</span></div>
+      <div class="card-h"><span class="card-l">System Health</span></div>
       <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">
-          <strong>ID:</strong> Obserbatoryo Pampanahon<br>
-          <strong>MAC:</strong> 28:56:2F:6A:27:AF<br>
+          <strong>Source:</strong> Google Apps Script API<br>
           <strong>Status:</strong> <span id="sStat" style="color:var(--green)">Active</span><br>
-          <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">Data is refreshed every 5 minutes from Ecowitt Cloud.</div>
+          <strong>Update Interval:</strong> 5 Minutes
+          <div id="lastSync" style="margin-top:10px;font-size:11px;color:var(--text-muted)">Awaiting first sync...</div>
       </div>
     </div>
   </aside>
@@ -108,26 +108,28 @@ header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid v
       <div class="os"><div class="osv" id="oW">--</div><div class="osl">WBGT</div></div><div class="odiv"></div>
       <div class="os"><div class="osv" id="oR">--</div><div class="osl">Overall Risk</div></div>
     </div>
-    <div class="lov" id="loadOv"><div class="spin"></div><div class="ltxt2"><strong>Syncing Live Data</strong><br>Retrieving observations from Naic weather station...</div></div>
+    <div class="lov" id="loadOv"><div class="spin"></div><div class="ltxt2"><strong>Syncing Live Data</strong><br>Retrieving observations from Google API...</div></div>
     <div id="map"></div>
   </main>
 </div>
 
 <script>
-const ECO_APP_KEY = 'B66BB13EE4E510B97D4F972D18683F7A';
-const ECO_API_KEY = 'e91ed300-6df8-406e-b105-b3fd4f77b8bc';
-const ECO_MAC     = '28:56:2F:6A:27:AF';
+const GOOGLE_API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrQNVWBzA3cFbrbFaGdf1ErdVWGXpESBZpfr-he6WWLyDSPVNTqPoD7tOpepczUbCwjfI49A9wKqQUK5gI6nO6CfSL0IYTCfqY6rlbBklqKT_fM6okwWWgSYlcHC67Ytvu34zm15_7CqWPEQizwJGFy00lEDai77DnGq5TmoDehrNpQNvlslQMG3JfVUs9GO3FwolUvCgJE3wN_P6ecT-gbsVrB5_-w4hpdY1I9HdG13rsPu82L-g8YL0H26CqrP3IIpeK78rYwyWKQD0rwpBHFLWtWXay8QHSrFcZ6Z&lib=MTbhs9Zv5KTG9ImKpSDDDPCIObk80Qa1W";
 
 const BRGY_NAMES = ["Bagong Karsada","Balsahan","Bancaan","Bucana Malaki","Bucana Sasahan","Calubcob","Capt. C. Nazareno","Gomez-Zamora","Halang","Humbac","Ibayo Estacion","Ibayo Silangan","Kanluran","Labac","Latoria","Mabolo","Makina","Malainen Bago","Malainen Luma","Molino","Munting Mapino","Muzon","Palangue 1","Palangue 2 & 3","Sabang","San Roque","Santulan","Sapa","Timalan Balsahan","Timalan Concepcion"];
 
 function matchBrgyName(n){if(!n)return null;let c=String(n).replace(/^(Barangay|Brgy\.?)\s+/i,'').trim();if(BRGY_NAMES.includes(c))return c;let l=c.toLowerCase();return BRGY_NAMES.find(x=>x.toLowerCase()===l)||null}
+
 const RL = {
   low:{l:"Low",c:"#22c55e",bg:"rgba(34,197,94,.12)",i:"✅",d:"No significant risk",a:"Normal outdoor activities. Stay hydrated."},
-  moderate:{l:"Moderate",c:"#facc15",bg:"rgba(250,204,21,.12)",i:"⚠️",d:"Fatigue possible with exposure",a:"Limit prolonged sun exposure. Water breaks."},
+  moderate:{l:"Moderate",c:"#facc15",bg:"rgba(250,204,21,.12)",i:"⚠️",d:"Fatigue possible with exposure",a:"Limit prolonged sun exposure."},
   high:{l:"High",c:"#f97316",bg:"rgba(249,115,22,.12)",i:"🔶",d:"Heat cramps & exhaustion likely",a:"Avoid outdoor work 10AM-3PM."},
   extreme:{l:"Extreme",c:"#ef4444",bg:"rgba(239,68,68,.12)",i:"🔴",d:"Heat stroke danger",a:"EMERGENCY: Suspend outdoor activities."}
 };
+
 function riskOf(h){return h>=42?"extreme":h>=33?"high":h>=27?"moderate":"low"}
+
+// Heat Index formula for Celsius
 function calcHI(T,R){return -8.78469475556+1.61139411*T+2.33854883889*R-.14611605*T*R-.012308094*T*T-.0164248277778*R*R+.002211732*T*T*R+.00072546*T*R*R-.000003582*T*T*R*R}
 
 let BS={}, geoL=null, geoData=null;
@@ -147,33 +149,45 @@ function processGeo(geo){
 }
 
 async function fetchLive(){
-  const proxy = "https://corsproxy.io/?";
-  const url = `${proxy}https://api.ecowitt.net/api/v1/device/real_time?application_key=${ECO_APP_KEY}&api_key=${ECO_API_KEY}&call_type=all&mac=${ECO_MAC}`;
-  
   try {
-    const res = await fetch(url);
-    const d = await res.json();
-    if(d.code === 0){
-      // Ecowitt returns values as strings/objects. Unit depends on station settings.
-      let temp = parseFloat(d.data.outdoor.temperature.value);
-      let hum = parseFloat(d.data.outdoor.humidity.value);
+    const res = await fetch(GOOGLE_API_URL);
+    const json = await res.json();
+    
+    if(json.raw_data && json.raw_data.data){
+      const d = json.raw_data.data;
       
-      // Convert to Metric if station is in Fahrenheit (Assuming metric for Naic)
-      if(d.data.outdoor.temperature.unit === 'ºF') temp = (temp - 32) * 5/9;
+      // Extraction and F to C Conversion
+      const fTemp = parseFloat(d.outdoor.temperature.value);
+      const hum   = parseFloat(d.outdoor.humidity.value);
+      const fWbgt = parseFloat(d.black_globe_temperature.wbgt.value);
       
-      let hi = calcHI(temp, hum);
-      let wbgt = hi * 0.75; // Approximation logic
-      applyLive(hi, wbgt, temp, hum);
+      const cTemp = (fTemp - 32) * 5/9;
+      const cWbgt = (fWbgt - 32) * 5/9;
+      const hi    = calcHI(cTemp, hum);
+      
+      applyLive(hi, cWbgt, cTemp, hum);
+      
       document.getElementById('cStat').textContent = 'Live: ' + new Date().toLocaleTimeString();
+      document.getElementById('lastSync').textContent = 'Last data point: ' + new Date(json.timestamp).toLocaleTimeString();
     }
-  } catch(e) { console.error("API Error", e); }
+  } catch(e) { 
+    console.error("API Error", e);
+    document.getElementById('cStat').textContent = 'API Offline';
+  }
 }
 
 function applyLive(bHI,bW,bT,bH){
   if(!geoData)return;
   geoData.features.forEach(f=>{
-    const n=f.properties._dn, v=(Math.random()-.5)*4; // Slight variation per brgy
-    BS[n]={heatIndex:+Math.max(22,bHI+v).toFixed(1),wbgt:+Math.max(18,bW+v*.7).toFixed(1),temperature:+Math.max(22,bT+v*.5).toFixed(1),humidity:+Math.max(40,Math.min(100,bH+v)).toFixed(0),risk:riskOf(bHI+v)};
+    const n=f.properties._dn;
+    const v=(Math.random()-.5)*3; // Slight variance for visualization
+    BS[n]={
+        heatIndex: +(bHI+v).toFixed(1),
+        wbgt: +(bW+v*.7).toFixed(1),
+        temperature: +(bT+v*.5).toFixed(1),
+        humidity: +bH.toFixed(0),
+        risk: riskOf(bHI+v)
+    };
   });
   render(); updateUI();
 }
@@ -181,19 +195,23 @@ function applyLive(bHI,bW,bT,bH){
 function render(){
   if(geoL) map.removeLayer(geoL);
   geoL=L.geoJSON(geoData,{
-    style:f=>{let r=BS[f.properties._dn]?.risk||'low';return{fillColor:RL[r].c,fillOpacity:h>=.4?h:.25,color:RL[r].c,weight:2,opacity:.8}},
+    style:f=>{
+      let r=BS[f.properties._dn]?.risk||'low';
+      return{fillColor:RL[r].c,fillOpacity:0.4,color:RL[r].c,weight:2,opacity:0.8}
+    },
     onEachFeature:(f,ly)=>{
       const n=f.properties._dn, d=BS[n], r=RL[d.risk];
       ly.bindPopup(`<div class="pi"><div class="pb">${n}</div><div class="prb" style="background:${r.bg};color:${r.c}">${r.i} ${r.l} Risk</div><div class="pmet"><div class="pmb"><div class="pmv">${d.heatIndex}°C</div><div class="pml">HI</div></div><div class="pmb"><div class="pmv">${d.temperature}°C</div><div class="pml">Temp</div></div></div></div>`);
     }
   }).addTo(map);
-  map.fitBounds(geoL.getBounds());
+  if(geoL.getBounds().isValid()) map.fitBounds(geoL.getBounds());
 }
 
 function updateUI(){
   const S=Object.values(BS); if(!S.length)return;
   const avg=k=>(S.reduce((s,b)=>s+b[k],0)/S.length);
   const aHI=avg('heatIndex').toFixed(1), or=riskOf(+aHI), rd=RL[or];
+  
   document.getElementById('bigHI').textContent=Math.round(aHI);
   document.getElementById('bigHI').style.color=rd.c;
   document.getElementById('rBadge').textContent=rd.l.toUpperCase();
@@ -205,13 +223,23 @@ function updateUI(){
   document.getElementById('mHum').textContent=avg('humidity').toFixed(0)+'%';
   document.getElementById('mRisk').textContent=S.filter(b=>b.risk!=='low').length;
   document.getElementById('bCount').textContent=S.length+' Brgy';
+  
   document.getElementById('oHI').textContent=Math.round(aHI)+'°C';
+  document.getElementById('oW').textContent=avg('wbgt').toFixed(1)+'°C';
   document.getElementById('oR').textContent=rd.l;
+
+  const sorted=Object.entries(BS).sort((a,b)=>b[1].heatIndex-a[1].heatIndex);
+  document.getElementById('bList').innerHTML=sorted.map(([n,d])=>{
+    return `<div class="bitem"><div class="bname"><span class="bdot" style="background:${RL[d.risk].c}"></span><span>${n}</span></div><span class="bval" style="color:${RL[d.risk].c}">${d.heatIndex}°C</span></div>`;
+  }).join('');
 }
+
+function clk(){document.getElementById('clock').textContent=new Date().toLocaleString('en-PH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}
+setInterval(clk,1000); clk();
 
 window.onload = () => {
   fetch('NaicSHP2.geojson').then(r=>r.json()).then(processGeo).catch(()=>console.log("Waiting for manual upload..."));
-  setInterval(fetchLive, 300000); // Auto-refresh every 5 mins
+  setInterval(fetchLive, 300000); // Sync every 5 mins
 };
 </script>
 </body>
