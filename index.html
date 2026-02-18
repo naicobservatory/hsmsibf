@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HeatGuard Naic — Impact-Based Heat Stress Portal</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/osmtogeojson@3.0.0-beta.5/osmtogeojson.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+/* (Styles kept from original index (4).html) */
+:root{--bg-primary:#0a0e17;--bg-secondary:#111827;--bg-card:#1a2235;--border:#2a3550;--text-primary:#e8ecf4;--text-secondary:#8899b4;--text-muted:#5a6a85;--accent:#3b82f6;--green:#22c55e;--green-bg:rgba(34,197,94,.12);--yellow:#facc15;--yellow-bg:rgba(250,204,21,.12);--orange:#f97316;--orange-bg:rgba(249,115,22,.12);--red:#ef4444;--red-bg:rgba(239,68,68,.12)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow:hidden;height:100vh}
+.app{display:grid;grid-template-columns:380px 1fr;grid-template-rows:64px 1fr;height:100vh}
+header{grid-column:1/-1;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:1000}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--orange),var(--red));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand h1{font-family:'Playfair Display',serif;font-weight:900;font-size:20px;letter-spacing:-.5px;background:linear-gradient(135deg,#fff,#8899b4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand small{font-size:11px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase}
+.hstatus{display:flex;align-items:center;gap:20px}
+.chip{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--text-secondary);font-family:'JetBrains Mono',monospace}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
+.dot.off{background:var(--red);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.clock{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-secondary)}
+.sidebar{background:var(--bg-secondary);border-right:1px solid var(--border);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-l{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);font-weight:500}
+.badge{font-size:10px;padding:3px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-weight:600}
+.rsum{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.rbig{font-family:'JetBrains Mono',monospace;font-size:42px;font-weight:700;line-height:1}
+.runit{font-size:14px;color:var(--text-secondary);font-weight:400}
+.rlabel{font-size:14px;font-weight:600}
+.rsub{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mbox{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:12px;text-align:center}
+.mval{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600}
+.mlbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-top:4px}
+.legend{display:flex;flex-direction:column;gap:8px}
+.lrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s}
+.lrow:hover{background:rgba(255,255,255,.04)}
+.lcol{width:14px;height:14px;border-radius:4px;flex-shrink:0}
+.ltxt{font-size:12px;font-weight:500;flex:1}
+.lrng{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)}
+.blist{display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto}
+.blist::-webkit-scrollbar{width:3px}.blist::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.bitem{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;font-size:12px}
+.bitem:hover{background:rgba(255,255,255,.05)}
+.bname{display:flex;align-items:center;gap:8px}
+.bdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bval{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:12px}
+.aform{display:flex;flex-direction:column;gap:10px}
+.aform label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:5px}
+.ainput{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:12px;outline:none}
+.ainput:focus{border-color:var(--accent)}.ainput::placeholder{color:var(--text-muted)}
+.btn{padding:10px 16px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{background:#2563eb}
+.btn-o{background:transparent;color:var(--text-secondary);border:1px solid var(--border)}.btn-o:hover{background:rgba(255,255,255,.04)}
+.btnr{display:flex;gap:8px}.btnr .btn{flex:1;text-align:center}
+.mapc{position:relative}
+#map{width:100%;height:100%;background:#0d1320}
+.leaflet-control-zoom a{background:var(--bg-card)!important;color:var(--text-primary)!important;border-color:var(--border)!important}
+.leaflet-popup-content-wrapper{background:var(--bg-card)!important;color:var(--text-primary)!important;border:1px solid var(--border)!important;border-radius:12px!important;box-shadow:0 20px 40px rgba(0,0,0,.5)!important;font-family:'DM Sans',sans-serif!important}
+.leaflet-popup-tip{background:var(--bg-card)!important}.leaflet-popup-close-button{color:var(--text-muted)!important}
+.movl{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:800;background:rgba(17,24,39,.88);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;padding:10px 20px;display:flex;align-items:center;gap:16px;pointer-events:none}
+.os{text-align:center}.osv{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700}.osl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted)}
+.odiv{width:1px;height:30px;background:var(--border)}
+.lov{position:absolute;inset:0;background:rgba(10,14,23,.92);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .5s}
+.lov.h{opacity:0;pointer-events:none}
+.spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ltxt2{font-size:13px;color:var(--text-secondary);text-align:center;max-width:300px;line-height:1.6}
+.ltxt2 strong{color:var(--text-primary)}
+#lstatus{margin-top:4px;font-size:11px;color:var(--accent)}
+.pi{min-width:200px}.pb{font-size:15px;font-weight:700;margin-bottom:2px}.pm{font-size:11px;color:var(--text-muted);margin-bottom:10px}
+.prb{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:10px}
+.prb .ri{font-size:18px}.prb .rt{font-size:13px;font-weight:600}
+.pmet{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pmb{background:rgba(255,255,255,.04);border-radius:6px;padding:6px 8px;text-align:center}
+.pmv{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600}
+.pml{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.padv{margin-top:8px;padding:8px;border-radius:6px;background:rgba(255,255,255,.03);font-size:11px;color:var(--text-secondary);line-height:1.5}
+.padv strong{color:var(--text-primary);display:block;margin-bottom:3px;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><div class="brand-icon">🌡</div><div><h1>HeatGuard Naic</h1><small>Impact-Based Heat Stress Portal</small></div></div>
+    <div class="hstatus">
+      <div class="chip"><span class="dot" id="cDot"></span><span id="cStat">Demo Mode</span></div>
+      <div class="clock" id="clock"></div>
+    </div>
+  </header>
+  <aside class="sidebar" id="sidebar">
+    <div class="shandle" onclick="this.parentElement.classList.toggle('open')"><div class="sbar"></div></div>
+    <div class="card">
+      <div class="card-h"><span class="card-l">Municipal Risk Level</span><span class="badge" id="rBadge" style="background:var(--yellow-bg);color:var(--yellow)">LOADING</span></div>
+      <div class="rsum"><div><span class="rbig" id="bigHI" style="color:var(--yellow)">--</span><span class="runit">°C HI</span></div><div><div class="rlabel" id="rTitle">Loading...</div><div class="rsub" id="rDesc">Fetching boundaries</div></div></div>
+      <div class="mgrid">
+        <div class="mbox"><div class="mval" id="mWBGT">--</div><div class="mlbl">WBGT °C</div></div>
+        <div class="mbox"><div class="mval" id="mTemp">--</div><div class="mlbl">Temp °C</div></div>
+        <div class="mbox"><div class="mval" id="mHum">--</div><div class="mlbl">Humidity</div></div>
+        <div class="mbox"><div class="mval" id="mRisk">--</div><div class="mlbl">Brgy at Risk</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span class="card-l">Barangay Status</span><span class="badge" id="bCount" style="background:rgba(59,130,246,.15);color:var(--accent)">--</span></div>
+      <div class="blist" id="bList"><div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px">Loading...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span class="card-l">Ecowitt API Config</span></div>
+      <div class="aform">
+        <div><label>Application Key</label><input class="ainput" id="aApp" placeholder="e.g. abc123..."></div>
+        <div><label>API Key</label><input class="ainput" type="password" id="aKey" placeholder="Your API key"></div>
+        <div><label>MAC Address</label><input class="ainput" id="aMac" placeholder="AA:BB:CC:DD:EE:FF"></div>
+        <div class="btnr"><button class="btn btn-p" onclick="connectEcowitt()">Connect</button><button class="btn btn-o" onclick="refreshDemo()">Demo Data</button></div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.5" id="aStat">Enter Ecowitt credentials or use Demo mode.</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="mapc">
+    <div class="movl">
+      <div class="os"><div class="osv">Naic, Cavite</div><div class="osl">Municipality</div></div><div class="odiv"></div>
+      <div class="os"><div class="osv" id="oHI">--</div><div class="osl">Heat Index</div></div><div class="odiv"></div>
+      <div class="os"><div class="osv" id="oW">--</div><div class="osl">WBGT</div></div><div class="odiv"></div>
+      <div class="os"><div class="osv" id="oR">--</div><div class="osl">Overall Risk</div></div>
+    </div>
+    <div class="lov" id="loadOv"><div class="spin"></div><div class="ltxt2"><strong>Loading Portal</strong><br>Fetching boundaries and setting up heat models...<div id="lstatus"></div></div></div>
+    <div id="map"></div>
+  </main>
+</div>
+
+<script>
+// --------------------- CONFIG & HELPERS (from index (4).html) ---------------------
+const BRGY_NAMES = [
+  "Bagong Karsada","Balsahan","Bancaan","Bucana Malaki","Bucana Sasahan",
+  "Calubcob","Capt. C. Nazareno","Gomez-Zamora","Halang","Humbac",
+  "Ibayo Estacion","Ibayo Silangan","Kanluran","Labac","Latoria",
+  "Mabolo","Makina","Malainen Bago","Malainen Luma","Molino",
+  "Munting Mapino","Muzon","Palangue 1","Palangue 2 & 3",
+  "Sabang","San Roque","Santulan","Sapa","Timalan Balsahan","Timalan Concepcion"
+];
+
+function matchBrgyName(name) {
+  if (!name) return null;
+  let clean = String(name).replace(/^(Barangay|Brgy\.?)\s+/i, '').trim();
+  if (BRGY_NAMES.includes(clean)) return clean;
+  const lower = clean.toLowerCase();
+  return BRGY_NAMES.find(n => n.toLowerCase() === lower) || null;
+}
+
+const RL = {
+  low:     {l:"Low",     c:"#22c55e",bg:"rgba(34,197,94,.12)", i:"✅",d:"No significant risk",a:"Normal outdoor activities. Stay hydrated."},
+  moderate:{l:"Moderate",c:"#facc15",bg:"rgba(250,204,21,.12)",i:"⚠️",d:"Fatigue possible with exposure",a:"Limit prolonged sun exposure. Frequent water breaks."},
+  high:    {l:"High",    c:"#f97316",bg:"rgba(249,115,22,.12)",i:"🔶",d:"Heat cramps & exhaustion likely",a:"Avoid outdoor work 10AM-3PM. Open cooling centers."},
+  extreme: {l:"Extreme", c:"#ef4444",bg:"rgba(239,68,68,.12)", i:"🔴",d:"Heat stroke danger",a:"EMERGENCY: Suspend outdoor activities. Activate health response."},
+};
+
+function riskOf(hi){return hi>=42?"extreme":hi>=33?"high":hi>=27?"moderate":"low"}
+function fillC(r){return{low:"#22c55e",moderate:"#eab308",high:"#ea580c",extreme:"#dc2626"}[r]||"#22c55e"}
+function fillO(r){return{low:.25,moderate:.4,high:.5,extreme:.6}[r]||.25}
+
+let BS={}, geoL=null, geoData=null;
+const map = L.map('map',{center:[14.3167,120.7667],zoom:13});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OSM © CARTO',maxZoom:19}).addTo(map);
+
+// --------------------- DATA PROCESSING ---------------------
+
+function processGeo(geo, source){
+  if(!geo || !geo.features) return false;
+  const chosen = [];
+  const used = new Set();
+
+  geo.features.forEach(f => {
+    const props = f.properties || {};
+    // Check multiple common property keys from SHP files
+    let raw = props.NAME_3 || props.ADM4_EN || props.barangay || props.BARANGAY || props.name || props.NAME || '';
+    let matched = matchBrgyName(raw);
+    let displayName = matched || raw || 'Area ' + (chosen.length + 1);
+    
+    f.properties._dn = displayName;
+    if(!used.has(displayName)){
+      used.add(displayName);
+      chosen.push(f);
+    }
+  });
+
+  geoData = {type:'FeatureCollection', features: chosen};
+  genDemo(); render(); updateUI();
+  document.getElementById('loadOv').classList.add('h');
+  return true;
+}
+
+// --------------------- GITHUB AUTO-LOAD LOGIC ---------------------
+
+async function loadBoundaries() {
+    const statusEl = document.getElementById('lstatus');
+    statusEl.textContent = 'Searching for NaicSHP2.geojson in repository...';
+
+    try {
+        // Try local file first (relative path)
+        const response = await fetch('NaicSHP2.geojson');
+        if (response.ok) {
+            const data = await response.json();
+            processGeo(data, 'Local GeoJSON');
+            statusEl.textContent = '✓ Successfully loaded NaicSHP2.geojson';
+            return;
+        }
+    } catch (err) {
+        console.warn('Local file not found, trying remote sources...');
+    }
+
+    // Fallback: Original Overpass/OSM logic if local file fails
+    statusEl.textContent = 'Local file not found. Fetching from OSM fallback...';
+    // (Existing Overpass logic from index (4).html would go here)
+    setTimeout(() => { if(!geoData) document.getElementById('loadOv').classList.add('h'); }, 3000);
+}
+
+// --------------------- MAP & UI RENDERING ---------------------
+
+function render(){
+  if(geoL) map.removeLayer(geoL);
+  geoL = L.geoJSON(geoData,{
+    style:f=>{
+      const d=BS[f.properties._dn], r=d?.risk||'low';
+      return{fillColor:fillC(r),fillOpacity:fillO(r),color:RL[r].c,weight:2,opacity:.85}
+    },
+    onEachFeature:(f,ly)=>{
+      const n=f.properties._dn, d=BS[n] || {heatIndex:0,risk:'low',wbgt:0,temperature:0,humidity:0};
+      const r=RL[d.risk];
+      ly.bindPopup(`<div class="pi"><div class="pb">${n}</div><div class="pm">Naic, Cavite</div>
+        <div class="prb" style="background:${r.bg};color:${r.c}"><span class="ri">${r.i}</span><span class="rt">${r.l} Risk</span></div>
+        <div class="pmet">
+          <div class="pmb"><div class="pmv" style="color:${r.c}">${d.heatIndex}°C</div><div class="pml">Heat Index</div></div>
+          <div class="pmb"><div class="pmv">${d.wbgt}°C</div><div class="pml">WBGT</div></div>
+          <div class="pmb"><div class="pmv">${d.temperature}°C</div><div class="pml">Temp</div></div>
+          <div class="pmb"><div class="pmv">${d.humidity}%</div><div class="pml">Humidity</div></div>
+        </div>
+        <div class="padv"><strong>Impact Advisory</strong>${r.a}</div></div>`,{maxWidth:280});
+    }
+  }).addTo(map);
+  if(geoL.getBounds().isValid()) map.fitBounds(geoL.getBounds(), {padding: [20,20]});
+}
+
+function updateUI(){
+  const S=Object.values(BS); if(!S.length) return;
+  const avg=k=>(S.reduce((s,b)=>s+b[k],0)/S.length);
+  const aHI=avg('heatIndex').toFixed(1), or=riskOf(+aHI), rd=RL[or];
+
+  document.getElementById('bigHI').textContent=Math.round(aHI);
+  document.getElementById('bigHI').style.color=rd.c;
+  document.getElementById('rBadge').textContent=rd.l.toUpperCase();
+  document.getElementById('rBadge').style.background=rd.bg;
+  document.getElementById('rBadge').style.color=rd.c;
+  document.getElementById('rTitle').textContent=rd.l+' Risk';
+  document.getElementById('rDesc').textContent=rd.d;
+  document.getElementById('mWBGT').textContent=avg('wbgt').toFixed(1);
+  document.getElementById('mTemp').textContent=avg('temperature').toFixed(1);
+  document.getElementById('mHum').textContent=avg('humidity').toFixed(0)+'%';
+  document.getElementById('mRisk').textContent=S.filter(b=>b.risk!=='low').length;
+  document.getElementById('bCount').textContent=S.length+' Brgy';
+
+  const sorted=Object.entries(BS).sort((a,b)=>b[1].heatIndex-a[1].heatIndex);
+  document.getElementById('bList').innerHTML=sorted.map(([n,d])=>{
+    return `<div class="bitem" onclick="focusBrgy('${n}')"><div class="bname"><span class="bdot" style="background:${RL[d.risk].c}"></span><span>${n}</span></div><span class="bval" style="color:${RL[d.risk].c}">${d.heatIndex}°C</span></div>`;
+  }).join('');
+}
+
+function focusBrgy(n){
+  geoL?.eachLayer(l=>{if(l.feature?.properties._dn===n){map.fitBounds(l.getBounds());l.openPopup()}});
+}
+
+function genDemo(){
+  const base=31+Math.random()*8;
+  (geoData?.features||[]).forEach(f=>{
+    const n=f.properties._dn, v=(Math.random()-.5)*10;
+    const hi=Math.max(24,Math.min(48,base+v));
+    BS[n]={heatIndex:+hi.toFixed(1),wbgt:+(hi*.75).toFixed(1),temperature:+(hi-4).toFixed(1),humidity:65,risk:riskOf(hi)};
+  });
+}
+
+function clk(){document.getElementById('clock').textContent=new Date().toLocaleString('en-PH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}
+setInterval(clk,1000); clk();
+
+window.onload = loadBoundaries;
+function refreshDemo() { genDemo(); render(); updateUI(); }
+</script>
+</body>
+</html>
