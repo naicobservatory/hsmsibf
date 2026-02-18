@@ -386,36 +386,38 @@ async function fetchLive() {
 
 // ════════════════════════════════════════════════════════════════════════════
 //  CORE: APPLY LIVE READINGS → IMPACT MATRIX → PER-BRGY RISK
+//  All barangays receive the SAME observed HI, WBGT, temp, and humidity.
+//  Map shade color differs only because of each barangay's vulnerability
+//  profile in the impact matrix database.
 // ════════════════════════════════════════════════════════════════════════════
 function applyLive(bHI, bW, bT, bH) {
   if (!geoData) return;
 
+  // Single observed values — identical for every barangay
+  const observedHI   = +bHI.toFixed(1);
+  const observedWBGT = +bW.toFixed(1);
+  const observedTemp = +bT.toFixed(1);
+  const observedHum  = +bH.toFixed(0);
+
   geoData.features.forEach(f => {
     const n = f.properties._dn;
 
-    // Spatial variation: ±1.5°C around station reading
-    // Replace with real spatial interpolation data when available
-    const v = (Math.random() - 0.5) * 3;
+    // Risk is the ONLY thing that differs per barangay,
+    // driven entirely by the impact matrix + vulnerability profile
+    const impactRisk = getImpactRisk(observedHI, observedWBGT, n);
 
-    const localHI   = +(bHI + v).toFixed(1);
-    const localWBGT = +(bW  + v * 0.7).toFixed(1);
-
-    // ← KEY: risk determined by impact matrix + vulnerability profile
-    const impactRisk = getImpactRisk(localHI, localWBGT, n);
-
-    // Vulnerability details for popup display
     const brgyVul = MATRIX?.barangays[n];
     const modVal  = brgyVul ? vulnerabilityModifier(brgyVul).toFixed(2) : null;
 
     BS[n] = {
-      heatIndex:   localHI,
-      wbgt:        localWBGT,
-      temperature: +(bT + v * 0.5).toFixed(1),
-      humidity:    +bH.toFixed(0),
+      heatIndex:   observedHI,
+      wbgt:        observedWBGT,
+      temperature: observedTemp,
+      humidity:    observedHum,
       risk:        impactRisk,
       vulMod:      modVal,
-      hiTier:      getTier(localHI,   MATRIX?.hi_thresholds   || [27,33,42]),
-      wbgtTier:    getTier(localWBGT, MATRIX?.wbgt_thresholds || [18,25,28])
+      hiTier:      getTier(observedHI,   MATRIX?.hi_thresholds   || [27,33,42]),
+      wbgtTier:    getTier(observedWBGT, MATRIX?.wbgt_thresholds || [18,25,28])
     };
   });
 
@@ -482,20 +484,26 @@ function render() {
 
 // ════════════════════════════════════════════════════════════════════════════
 //  SIDEBAR UI UPDATE
+//  All barangays share the same observed HI/WBGT/temp/humidity.
+//  Only the impact risk differs per barangay.
 // ════════════════════════════════════════════════════════════════════════════
 function updateUI() {
   const S = Object.values(BS);
   if (!S.length) return;
 
-  const avg = k => S.reduce((s, b) => s + b[k], 0) / S.length;
-  const aHI = avg('heatIndex');
+  // All values are identical across barangays — just read from the first entry
+  const first = S[0];
+  const obsHI   = first.heatIndex;
+  const obsWBGT = first.wbgt;
+  const obsTemp = first.temperature;
+  const obsHum  = first.humidity;
 
   // Municipal overall risk = worst risk level present across all barangays
   const worst = S.reduce((w, b) => RISK_RANK[b.risk] > RISK_RANK[w] ? b.risk : w, 'low');
   const rd = RL[worst];
 
   // Header stats
-  document.getElementById('bigHI').textContent  = Math.round(aHI);
+  document.getElementById('bigHI').textContent  = Math.round(obsHI);
   document.getElementById('bigHI').style.color  = rd.c;
   document.getElementById('rBadge').textContent = rd.l.toUpperCase();
   document.getElementById('rBadge').style.background = rd.bg;
@@ -503,22 +511,22 @@ function updateUI() {
   document.getElementById('rTitle').textContent = rd.l + ' Risk';
   document.getElementById('rDesc').textContent  = rd.d;
 
-  // Metric boxes
-  document.getElementById('mWBGT').textContent = avg('wbgt').toFixed(1);
-  document.getElementById('mTemp').textContent = avg('temperature').toFixed(1);
-  document.getElementById('mHum').textContent  = avg('humidity').toFixed(0) + '%';
+  // Metric boxes — single observed values, not averages
+  document.getElementById('mWBGT').textContent = obsWBGT.toFixed(1);
+  document.getElementById('mTemp').textContent = obsTemp.toFixed(1);
+  document.getElementById('mHum').textContent  = obsHum + '%';
   document.getElementById('mRisk').textContent = S.filter(b => b.risk !== 'low').length;
 
   // Map overlay
   document.getElementById('bCount').textContent = S.length + ' Brgy';
-  document.getElementById('oHI').textContent    = Math.round(aHI) + '°C';
-  document.getElementById('oW').textContent     = avg('wbgt').toFixed(1) + '°C';
+  document.getElementById('oHI').textContent    = obsHI.toFixed(1) + '°C';
+  document.getElementById('oW').textContent     = obsWBGT.toFixed(1) + '°C';
   document.getElementById('oR').textContent     = rd.l;
   document.getElementById('oR').style.color     = rd.c;
 
-  // Barangay list — sorted by risk rank desc, then HI desc
+  // Barangay list — sorted by risk rank desc (HI is the same for all, so no tiebreaker needed)
   const sorted = Object.entries(BS).sort((a, b) =>
-    RISK_RANK[b[1].risk] - RISK_RANK[a[1].risk] || b[1].heatIndex - a[1].heatIndex
+    RISK_RANK[b[1].risk] - RISK_RANK[a[1].risk] || a[0].localeCompare(b[0])
   );
 
   document.getElementById('bList').innerHTML = sorted.map(([n, d]) => `
@@ -527,7 +535,7 @@ function updateUI() {
         <span class="bdot" style="background:${RL[d.risk].c}"></span>
         <span>${n}</span>
       </div>
-      <span class="bval" style="color:${RL[d.risk].c}">${d.heatIndex}°C · ${RL[d.risk].l}</span>
+      <span class="bval" style="color:${RL[d.risk].c}">${RL[d.risk].l}</span>
     </div>`).join('');
 }
 
