@@ -273,11 +273,18 @@ function roundHalf(n) {
 
 function vulnerabilityModifier(bd) {
   if (!bd) return 0;
-  const { outdoor_workers=0, elderly_pct=0, green_cover=0, urban_heat=0 } = bd;
-  return (outdoor_workers * 0.30)
-       + (elderly_pct    * 0.50)
-       + (urban_heat     * 0.30)
-       - (green_cover    * 0.40);
+  const {
+    outdoor_workers = 0, elderly_pct   = 0, infant_pct  = 0,
+    green_cover     = 0, urban_heat     = 0,
+    health_access   = 0, flood_prone    = 0
+  } = bd;
+  return (outdoor_workers * 0.25)   // farmers + fisherfolk (heat-exposed)
+       + (elderly_pct    * 0.35)   // 60+ population (PSA 2020)
+       + (infant_pct     * 0.15)   // 0–4 population (PSA 2020)
+       + (urban_heat     * 0.20)   // built-up / impervious surface
+       + (health_access  * 0.15)   // inverse coping capacity (DOH + OSM)
+       + (flood_prone    * 0.10)   // official flood-prone designation
+       - (green_cover    * 0.30);  // vegetation cover (cooling effect)
 }
 
 function getImpactData(hi, wbgt, brgyName) {
@@ -439,14 +446,42 @@ function render() {
 
       let vulRows = '';
       if (vul) {
-        const modSign = d.mod > 0 ? '+' : '';
+        const modSign = (d.mod !== null && d.mod > 0) ? '+' : '';
+        const floodBadge = vul.flood_prone
+          ? `<span style="color:#f97316;font-size:9px;font-weight:700;background:rgba(249,115,22,.15);padding:1px 5px;border-radius:4px;margin-left:4px">FLOOD ZONE</span>`
+          : '';
         vulRows = `
-          <tr><td colspan="2" style="padding-top:8px;padding-bottom:2px;color:#5a6a85;font-size:9px;text-transform:uppercase;letter-spacing:1.5px">Vulnerability Profile</td></tr>
-          <tr><td style="color:#888">Outdoor Workers</td><td style="text-align:right">${(vul.outdoor_workers*100).toFixed(0)}%</td></tr>
-          <tr><td style="color:#888">Elderly Population</td><td style="text-align:right">${(vul.elderly_pct*100).toFixed(0)}%</td></tr>
-          <tr><td style="color:#888">Green Cover</td><td style="text-align:right">${(vul.green_cover*100).toFixed(0)}%</td></tr>
-          <tr><td style="color:#888">Urban Heat</td><td style="text-align:right">${(vul.urban_heat*100).toFixed(0)}/100</td></tr>
-          <tr><td style="color:#888">Vul. Modifier</td><td style="text-align:right">${d.mod !== null ? modSign+d.mod.toFixed(2) : '—'}</td></tr>`;
+          <tr><td colspan="2" style="padding-top:10px;padding-bottom:3px;color:#5a6a85;font-size:9px;text-transform:uppercase;letter-spacing:1.5px">
+            Vulnerability Profile
+            <span style="font-size:8px;color:#3b82f6;font-weight:500;letter-spacing:0;text-transform:none;margin-left:4px">PSA 2020 · DOH · OSM</span>
+          </td></tr>
+          <tr><td style="color:#888;padding-right:8px">Outdoor Workers</td>
+              <td style="text-align:right"><span style="font-family:'JetBrains Mono',monospace">${(vul.outdoor_workers*100).toFixed(0)}%</span>
+              <span style="color:#5a6a85;font-size:9px;margin-left:4px">farmers + fisherfolk</span></td></tr>
+          <tr><td style="color:#888">Elderly (60+)</td>
+              <td style="text-align:right"><span style="font-family:'JetBrains Mono',monospace">${(vul.elderly_pct*10.8).toFixed(1)}%</span>
+              <span style="color:#5a6a85;font-size:9px;margin-left:4px">of pop.</span></td></tr>
+          <tr><td style="color:#888">Infants (0–4)</td>
+              <td style="text-align:right"><span style="font-family:'JetBrains Mono',monospace">${(vul.infant_pct*15.0).toFixed(1)}%</span>
+              <span style="color:#5a6a85;font-size:9px;margin-left:4px">of pop.</span></td></tr>
+          <tr><td style="color:#888">Green Cover</td>
+              <td style="text-align:right"><span style="font-family:'JetBrains Mono',monospace">${(vul.green_cover*100).toFixed(0)}%</span>
+              <span style="color:#22c55e;font-size:9px;margin-left:4px">↓ reduces risk</span></td></tr>
+          <tr><td style="color:#888">Built-up / UHI</td>
+              <td style="text-align:right"><span style="font-family:'JetBrains Mono',monospace">${(vul.urban_heat*100).toFixed(0)}%</span>
+              <span style="color:#5a6a85;font-size:9px;margin-left:4px">impervious</span></td></tr>
+          <tr><td style="color:#888">Health Access</td>
+              <td style="text-align:right"><span style="font-family:'JetBrains Mono',monospace">${vul.health_access.toFixed(2)}</span>
+              <span style="color:#5a6a85;font-size:9px;margin-left:4px">0=best, 1=none</span></td></tr>
+          <tr><td style="color:#888">Flood Prone</td>
+              <td style="text-align:right">${vul.flood_prone ? '<span style="color:#f97316;font-weight:700">Yes</span>' : '<span style="color:#22c55e">No</span>'}</td></tr>
+          <tr><td style="color:#888;padding-top:4px">Vul. Modifier</td>
+              <td style="text-align:right;padding-top:4px;font-weight:700">
+                <span style="font-family:'JetBrains Mono',monospace;color:${d.mod > 0 ? '#f97316' : '#22c55e'}">
+                  ${d.mod !== null ? modSign + d.mod.toFixed(3) : '—'}
+                </span>
+              </td></tr>
+          <tr><td style="color:#888;font-size:9.5px" colspan="2">${vul._land_use || ''}</td></tr>`;
       }
 
       ly.bindPopup(`
@@ -516,14 +551,18 @@ function updateUI(obsHI, obsWBGT, obsTemp, obsHum) {
   const sorted = Object.entries(BS).sort((a,b) =>
     b[1].index - a[1].index || a[0].localeCompare(b[0])
   );
-  document.getElementById('bList').innerHTML = sorted.map(([n,d]) => `
+  document.getElementById('bList').innerHTML = sorted.map(([n,d]) => {
+    const pop = MATRIX?.barangays?.[n]?._pop_2020;
+    const popStr = pop ? `<span style="color:var(--text-muted);font-size:10px;margin-right:6px">${pop.toLocaleString()}</span>` : '';
+    return `
     <div class="bitem" onclick="highlightBrgy('${n.replace(/'/g,"\\'")}')">
       <div class="bname">
         <span class="bdot" style="background:${d.impact.color}"></span>
         <span>${n}</span>
       </div>
-      <span class="bval" style="color:${d.impact.color}">${d.index.toFixed(1)} · ${d.impact.label}</span>
-    </div>`).join('');
+      ${popStr}<span class="bval" style="color:${d.impact.color}">${d.index.toFixed(1)} · ${d.impact.label}</span>
+    </div>`;
+  }).join('');
 }
 
 // ── HIGHLIGHT ──────────────────────────────────────────────────────────────
