@@ -693,81 +693,79 @@ async function fetchLive() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
 
-    // Support both array response (rows) and single-object response
+    // API returns either an array of rows or a single object.
     const row = Array.isArray(json) ? json[json.length - 1] : json;
-    console.log('[HeatGuard] Station payload keys:', Object.keys(row));
-    console.log('[HeatGuard] Station payload:', row);
 
-    // Temperature — try all reasonable field names
-    const tempC = pick(row,
-      'temperature','Temperature','TEMPERATURE',
-      'temp_c','temp','Temp','ambient_temp','air_temp'
-    );
+    // ── The Google Sheet stores top-level fields as null; real readings are
+    //    nested inside raw_data.data from the Ecowitt / station firmware.
+    //    Structure: row.raw_data.data.outdoor.temperature.value  (°F string)
+    //               row.raw_data.data.outdoor.humidity.value     (% string)
+    //               row.raw_data.data.outdoor.feels_like.value   (°F string)
+    //               row.raw_data.data.black_globe_temperature.wbgt.value (°F string)
+    // ─────────────────────────────────────────────────────────────────────
+    const data    = row?.raw_data?.data;
+    const outdoor = data?.outdoor;
+    const bgt     = data?.black_globe_temperature;
 
-    // Humidity
-    const humidity = pick(row,
-      'humidity','Humidity','HUMIDITY',
-      'relative_humidity','rh','RH','hum'
-    );
+    if (!outdoor) throw new Error('raw_data.data.outdoor missing. Top-level keys: ' + Object.keys(row).join(', '));
 
-    if (tempC === null || humidity === null) {
-      throw new Error('Missing temperature or humidity fields. Got: ' + Object.keys(row).join(', '));
-    }
+    // Helper: read a nested {value, unit} object and parse to float
+    const val = obj => obj?.value != null ? parseFloat(obj.value) : null;
 
-    // Heat Index — prefer a pre-computed value from the station if available,
-    // otherwise calculate ourselves via the Rothfusz NOAA formula
-    let hiC = pick(row,
-      'heat_index','HeatIndex','heatindex','heat_index_c',
-      'feels_like','FeelsLike','feelslike','apparent_temp'
-    );
+    const tempF    = val(outdoor.temperature);
+    const humidity = val(outdoor.humidity);
+    const feelsF   = val(outdoor.feels_like) ?? val(outdoor.app_temp);
+    const wbgtF    = val(bgt?.wbgt);
 
-    if (hiC !== null) {
-      // Station may send HI in °F — if suspiciously high for Celsius, convert
-      if (hiC > 60) hiC = (hiC - 32) * 5/9;
-    } else {
-      // Compute from temperature + humidity (Rothfusz formula)
-      hiC = heatIndex(tempC, humidity);
-    }
+    if (tempF === null || humidity === null)
+      throw new Error('outdoor.temperature or outdoor.humidity missing');
 
-    // WBGT approximation — prefer station value, else Liljegren simplified
-    let wbgt = pick(row, 'wbgt','WBGT','wet_bulb','wet_bulb_globe');
-    if (wbgt === null) {
-      const vp = (humidity / 100) * 6.105 * Math.exp(17.27 * tempC / (237.3 + tempC));
-      wbgt = 0.567 * tempC + 0.393 * vp + 3.94;
-    }
+    // Convert °F → °C
+    const tempC = (tempF - 32) * 5/9;
+
+    // Heat Index: use station feels_like (°F) converted to °C,
+    // or fall back to Rothfusz formula if not present
+    const hiC = feelsF !== null
+      ? (feelsF - 32) * 5/9
+      : heatIndex(tempC, humidity);
+
+    // WBGT: station has a real Black Globe sensor — prefer it over formula
+    const wbgt = wbgtF !== null
+      ? (wbgtF - 32) * 5/9
+      : (() => {
+          const vp = (humidity / 100) * 6.105 * Math.exp(17.27 * tempC / (237.3 + tempC));
+          return 0.567 * tempC + 0.393 * vp + 3.94;
+        })();
 
     // Timestamp
-    const tsRaw = row.timestamp ?? row.Timestamp ?? row.datetime ?? row.DateTime ?? row.date ?? null;
-    const ts = tsRaw ? new Date(tsRaw) : new Date();
-    const tsValid = !isNaN(ts.getTime());
+    const tsRaw = row.timestamp ?? data?.time ?? null;
+    const ts    = tsRaw ? new Date(tsRaw) : new Date();
 
     document.getElementById('stationTime').textContent =
-      (tsValid ? ts : new Date()).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true});
+      ts.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true});
 
     dot.style.background = 'var(--green)';
-    stat.textContent     = 'Live \u2014 ' + (tsValid ? ts : new Date())
-      .toLocaleDateString('en-PH',{month:'short',day:'numeric'});
+    stat.textContent = 'Live \u2014 ' + ts.toLocaleDateString('en-PH',{month:'short',day:'numeric'});
 
-    console.log('[HeatGuard] Parsed — Temp:', tempC, '\u00B0C | Humidity:', humidity,
-                '% | HI:', hiC.toFixed(1), '\u00B0C | WBGT:', wbgt.toFixed(1), '\u00B0C');
+    const src = wbgtF !== null ? 'Black Globe sensor' : 'estimated';
+    console.log('[HeatGuard] OK \u2014 Temp:', tempC.toFixed(1),
+      '\u00B0C | RH:', humidity + '%',
+      '| HI:', hiC.toFixed(1) + '\u00B0C',
+      '| WBGT:', wbgt.toFixed(1) + '\u00B0C (' + src + ')');
 
     applyLive(hiC, wbgt, tempC, humidity);
     document.getElementById('loadOv').classList.add('gone');
 
   } catch(err) {
     dot.style.background = 'var(--red)';
-    stat.textContent     = 'Station error — see console';
+    stat.textContent     = 'Station error';
     console.error('[HeatGuard] fetchLive error:', err.message);
-
-    // Show helpful message in loading overlay if data never loaded
     if (Object.keys(BS).length === 0) {
       document.getElementById('loadOv').innerHTML =
         '<div style="font-size:28px">\u26A0\uFE0F</div>' +
         '<div class="ltxt">Station Offline</div>' +
-        '<div class="ltxt2" style="max-width:300px">Cannot reach weather station.<br>' +
-        'Check browser console (F12) for details.<br>' +
-        '<span style="font-size:10px;opacity:.6;word-break:break-all">' + STATION_URL.slice(0,60) + '&#8230;</span></div>' +
-        '<button onclick="fetchLive()" style="margin-top:12px;padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:13px">\u21BB Retry</button>';
+        '<div class="ltxt2">Cannot read station data.<br>Check console (F12) for details.</div>' +
+        '<button onclick="fetchLive()" style="margin-top:14px;padding:8px 22px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:13px">\u21BB Retry</button>';
     }
   }
 }
