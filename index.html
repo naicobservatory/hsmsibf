@@ -326,7 +326,24 @@ header{
 const STATION_URL       = "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrQNVWBzA3cFbrbFaGdf1ErdVWGXpESBZpfr-he6WWLyDSPVNTqPoD7tOpepczUbCwjfI49A9wKqQUK5gI6nO6CfSL0IYTCfqY6rlbBklqKT_fM6okwWWgSYlcHC67Ytvu34zm15_7CqWPEQizwJGFy00lEDai77DnGq5TmoDehrNpQNvlslQMG3JfVUs9GO3FwolUvCgJE3wN_P6ecT-gbsVrB5_-w4hpdY1I9HdG13rsPu82L-g8YL0H26CqrP3IIpeK78rYwyWKQD0rwpBHFLWtWXay8QHSrFcZ6Z&lib=MTbhs9Zv5KTG9ImKpSDDDPCIObk80Qa1W";
 const IMPACT_MATRIX_URL = "barangay_impact_matrix.json";
 const GEOJSON_URL       = "NaicSHP2.geojson";
-const REFRESH_MS        = 300000;
+const REFRESH_MS        = 300000;   // station poll interval (ms)
+
+// ── GitHub Rolling Average Store ─────────────────────────────────────────
+// Stores a small JSON file in your GitHub repo to persist rolling readings.
+// Replace the three values below with your own details.
+//
+//  GITHUB_OWNER : your GitHub username  (e.g. "juan-delacruz")
+//  GITHUB_REPO  : repo name             (e.g. "heatguard-naic")
+//  GITHUB_TOKEN : Personal Access Token with repo → Contents write scope
+//                 Generate at: github.com/settings/tokens/new
+//                 Required scopes: ✅ repo  (or fine-grained: Contents read+write)
+//
+const GITHUB_OWNER    = "naicobservatory";
+const GITHUB_REPO     = "hsmsibf";
+const GITHUB_TOKEN    = "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";
+const GITHUB_FILE     = "data/rolling_data.json"; // path inside repo
+const ROLLING_MINS    = 5;                         // rolling window in minutes
+const GITHUB_ENABLED  = GITHUB_OWNER !== "YOUR_GITHUB_USERNAME";  // auto-detects config
 
 // ============================================================
 //  STATE
@@ -685,31 +702,98 @@ function pick(obj, ...keys) {
   return null;
 }
 
+// ============================================================
+//  GITHUB ROLLING AVERAGE STORE
+//  Reads/writes data/rolling_data.json in your GitHub repo.
+//  Each entry: { ts: ISO string, hi: number, wbgt: number }
+//  Window: ROLLING_MINS minutes. Average used for map + index.
+// ============================================================
+
+// Fetch rolling data file from GitHub. Returns { readings, sha }.
+// sha is needed to overwrite the file on the next write.
+async function ghRead() {
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': 'Bearer ' + GITHUB_TOKEN,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  });
+  if (res.status === 404) return { readings: [], sha: null };  // file doesn\'t exist yet
+  if (!res.ok) throw new Error('GitHub read HTTP ' + res.status);
+  const meta = await res.json();
+  const json = JSON.parse(atob(meta.content.replace(/\n/g,'')));
+  return { readings: Array.isArray(json) ? json : [], sha: meta.sha };
+}
+
+// Write the updated readings array back to GitHub.
+async function ghWrite(readings, sha) {
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+  const body = {
+    message: 'HeatGuard rolling update ' + new Date().toISOString(),
+    content: btoa(JSON.stringify(readings, null, 2)),
+    ...(sha ? { sha } : {})   // sha required to update; omit on first create
+  };
+  const res = await fetch(url, {
+    method:  'PUT',
+    headers: {
+      'Authorization':       'Bearer ' + GITHUB_TOKEN,
+      'Accept':              'application/vnd.github+json',
+      'Content-Type':        'application/json',
+      'X-GitHub-Api-Version':'2022-11-28'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error('GitHub write HTTP ' + res.status + ' — ' + (err.message || ''));
+  }
+}
+
+// Add a new reading, trim to window, compute average, write back.
+// Returns { avgHI, avgWBGT } — the smoothed values for the map.
+async function rollingUpdate(rawHI, rawWBGT) {
+  const { readings, sha } = await ghRead();
+  const now     = Date.now();
+  const cutoff  = now - ROLLING_MINS * 60 * 1000;
+
+  // Append current reading
+  readings.push({ ts: new Date(now).toISOString(), hi: rawHI, wbgt: rawWBGT });
+
+  // Keep only readings within the rolling window
+  const window = readings.filter(r => new Date(r.ts).getTime() >= cutoff);
+
+  // Write trimmed array back (don\'t await — fire-and-forget so UI doesn\'t block)
+  ghWrite(window, sha).catch(e => console.warn('[HeatGuard] GitHub write failed:', e.message));
+
+  // Compute simple mean
+  const avgHI   = window.reduce((s,r) => s + r.hi,   0) / window.length;
+  const avgWBGT = window.reduce((s,r) => s + r.wbgt, 0) / window.length;
+
+  console.log(`[HeatGuard] Rolling avg (${window.length} readings, ${ROLLING_MINS} min window): ` +
+    `HI ${rawHI.toFixed(1)}\u00B0C raw \u2192 ${avgHI.toFixed(1)}\u00B0C avg | ` +
+    `WBGT ${rawWBGT.toFixed(1)}\u00B0C raw \u2192 ${avgWBGT.toFixed(1)}\u00B0C avg`);
+
+  return { avgHI, avgWBGT, n: window.length };
+}
+
 async function fetchLive() {
   const dot  = document.getElementById('cDot');
   const stat = document.getElementById('cStat');
   try {
+    // ── 1. Fetch raw station data ──────────────────────────────────────────
     const res  = await fetch(STATION_URL);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
+    const row  = Array.isArray(json) ? json[json.length - 1] : json;
 
-    // API returns either an array of rows or a single object.
-    const row = Array.isArray(json) ? json[json.length - 1] : json;
-
-    // ── The Google Sheet stores top-level fields as null; real readings are
-    //    nested inside raw_data.data from the Ecowitt / station firmware.
-    //    Structure: row.raw_data.data.outdoor.temperature.value  (°F string)
-    //               row.raw_data.data.outdoor.humidity.value     (% string)
-    //               row.raw_data.data.outdoor.feels_like.value   (°F string)
-    //               row.raw_data.data.black_globe_temperature.wbgt.value (°F string)
-    // ─────────────────────────────────────────────────────────────────────
+    // Real readings are nested inside raw_data.data (top-level fields are null)
     const data    = row?.raw_data?.data;
     const outdoor = data?.outdoor;
     const bgt     = data?.black_globe_temperature;
+    if (!outdoor) throw new Error('raw_data.data.outdoor missing');
 
-    if (!outdoor) throw new Error('raw_data.data.outdoor missing. Top-level keys: ' + Object.keys(row).join(', '));
-
-    // Helper: read a nested {value, unit} object and parse to float
     const val = obj => obj?.value != null ? parseFloat(obj.value) : null;
 
     const tempF    = val(outdoor.temperature);
@@ -720,24 +804,35 @@ async function fetchLive() {
     if (tempF === null || humidity === null)
       throw new Error('outdoor.temperature or outdoor.humidity missing');
 
-    // Convert °F → °C
-    const tempC = (tempF - 32) * 5/9;
-
-    // Heat Index: use station feels_like (°F) converted to °C,
-    // or fall back to Rothfusz formula if not present
-    const hiC = feelsF !== null
-      ? (feelsF - 32) * 5/9
-      : heatIndex(tempC, humidity);
-
-    // WBGT: station has a real Black Globe sensor — prefer it over formula
-    const wbgt = wbgtF !== null
+    const tempC  = (tempF - 32) * 5/9;
+    const rawHI  = feelsF !== null ? (feelsF - 32) * 5/9 : heatIndex(tempC, humidity);
+    const rawWBGT = wbgtF !== null
       ? (wbgtF - 32) * 5/9
-      : (() => {
-          const vp = (humidity / 100) * 6.105 * Math.exp(17.27 * tempC / (237.3 + tempC));
-          return 0.567 * tempC + 0.393 * vp + 3.94;
-        })();
+      : (() => { const vp=(humidity/100)*6.105*Math.exp(17.27*tempC/(237.3+tempC)); return 0.567*tempC+0.393*vp+3.94; })();
 
-    // Timestamp
+    const wbgtSrc = wbgtF !== null ? 'Black Globe' : 'estimated';
+    console.log(`[HeatGuard] Raw \u2014 Temp: ${tempC.toFixed(1)}\u00B0C | RH: ${humidity}% | HI: ${rawHI.toFixed(1)}\u00B0C | WBGT: ${rawWBGT.toFixed(1)}\u00B0C (${wbgtSrc})`);
+
+    // ── 2. Apply rolling average (GitHub) or use raw if not configured ─────
+    let displayHI   = rawHI;
+    let displayWBGT = rawWBGT;
+    let avgLabel    = '';
+
+    if (GITHUB_ENABLED) {
+      try {
+        const { avgHI, avgWBGT, n } = await rollingUpdate(rawHI, rawWBGT);
+        displayHI   = avgHI;
+        displayWBGT = avgWBGT;
+        avgLabel    = ` \u00B7 ${ROLLING_MINS}min avg (${n} readings)`;
+      } catch(ghErr) {
+        console.warn('[HeatGuard] Rolling avg unavailable, using raw:', ghErr.message);
+        avgLabel = ' \u00B7 raw (GitHub unavailable)';
+      }
+    } else {
+      avgLabel = ' \u00B7 raw (GitHub not configured)';
+    }
+
+    // ── 3. Update UI ──────────────────────────────────────────────────────
     const tsRaw = row.timestamp ?? data?.time ?? null;
     const ts    = tsRaw ? new Date(tsRaw) : new Date();
 
@@ -745,15 +840,9 @@ async function fetchLive() {
       ts.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true});
 
     dot.style.background = 'var(--green)';
-    stat.textContent = 'Live \u2014 ' + ts.toLocaleDateString('en-PH',{month:'short',day:'numeric'});
+    stat.textContent = 'Live \u2014 ' + ts.toLocaleDateString('en-PH',{month:'short',day:'numeric'}) + avgLabel;
 
-    const src = wbgtF !== null ? 'Black Globe sensor' : 'estimated';
-    console.log('[HeatGuard] OK \u2014 Temp:', tempC.toFixed(1),
-      '\u00B0C | RH:', humidity + '%',
-      '| HI:', hiC.toFixed(1) + '\u00B0C',
-      '| WBGT:', wbgt.toFixed(1) + '\u00B0C (' + src + ')');
-
-    applyLive(hiC, wbgt, tempC, humidity);
+    applyLive(displayHI, displayWBGT, tempC, humidity);
     document.getElementById('loadOv').classList.add('gone');
 
   } catch(err) {
