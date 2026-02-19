@@ -781,13 +781,7 @@ async function fetchLive() {
     const ts    = tsRaw ? new Date(tsRaw) : new Date();
 
     const timeStr = ts.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true});
-    const badge   = document.getElementById('stationTime');
-    badge.textContent    = timeStr;
-    badge.dataset.lastTime = timeStr;
-    badge.dataset.hasTime  = 'true';
-    // Restart countdown from next 5-min boundary
-    const msUntilNext = (5 * 60 * 1000) - (ts.getTime() % (5 * 60 * 1000));
-    updateCountdown(msUntilNext);
+    document.getElementById('stationTime').textContent = timeStr;
 
     dot.style.background = 'var(--green)';
     stat.textContent = 'Live \u2014 ' + ts.toLocaleDateString('en-PH',{month:'short',day:'numeric'}) + avgLabel;
@@ -855,45 +849,20 @@ window.onload = async () => {
 // ============================================================
 //  CLOCK-ALIGNED 5-MINUTE SCHEDULER
 //  Fires at :00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55
-//  regardless of when the page was loaded.
+//  Works by calculating ms to the next boundary, firing then,
+//  and repeating with a clean setInterval every 5 minutes.
 // ============================================================
 function scheduleFetch() {
-  const now        = new Date();
-  const ms         = now.getTime();
-  const interval   = 5 * 60 * 1000;                     // 5 minutes in ms
-  const boundary   = Math.ceil(ms / interval) * interval; // next :00/:05/:10… boundary
-  const msUntilNext = boundary - ms;
+  const INTERVAL    = 5 * 60 * 1000;
+  const now         = Date.now();
+  // ms remaining until the next 5-minute clock mark
+  const msUntilNext = INTERVAL - (now % INTERVAL);
 
-  // Show countdown in the station time badge
-  updateCountdown(msUntilNext);
-
-  setTimeout(() => {
+  // Wait until the next boundary, then fire and start a clean repeating interval
+  setTimeout(function() {
     fetchLive();
-    // After the first aligned fire, repeat exactly every 5 minutes
-    setInterval(() => {
-      fetchLive();
-      updateCountdown(5 * 60 * 1000);
-    }, interval);
+    setInterval(fetchLive, INTERVAL);
   }, msUntilNext);
-}
-
-// Live countdown to next refresh shown in the station time badge
-let _countdownTimer = null;
-function updateCountdown(msRemaining) {
-  if (_countdownTimer) clearInterval(_countdownTimer);
-  let remaining = Math.round(msRemaining / 1000);
-
-  _countdownTimer = setInterval(() => {
-    remaining--;
-    if (remaining <= 0) { clearInterval(_countdownTimer); return; }
-    const m = Math.floor(remaining / 60);
-    const s = String(remaining % 60).padStart(2, '0');
-    const badge = document.getElementById('stationTime');
-    // Only show countdown if badge already has a time value (station loaded)
-    if (badge && badge.dataset.hasTime === 'true') {
-      badge.textContent = badge.dataset.lastTime + '  ↻ ' + m + ':' + s;
-    }
-  }, 1000);
 }
 </script>
 </body>
