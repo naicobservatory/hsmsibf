@@ -715,7 +715,7 @@ async function getRollingAverage() {
   const avgHI   = pool.reduce((s,r) => s + r.hi,   0) / pool.length;
   const avgWBGT = pool.reduce((s,r) => s + r.wbgt, 0) / pool.length;
 
-  console.log(`[HeatGuard] 24h rolling avg — ${pool.length} readings: HI ${avgHI.toFixed(1)}°C | WBGT ${avgWBGT.toFixed(1)}°C`);
+  console.log('[HeatGuard] 24h rolling avg (' + pool.length + ' readings): HI ' + avgHI.toFixed(1) + '°C | WBGT ' + avgWBGT.toFixed(1) + '°C');
   return { avgHI, avgWBGT, n: pool.length };
 }
 
@@ -753,7 +753,7 @@ async function fetchLive() {
       : (() => { const vp=(humidity/100)*6.105*Math.exp(17.27*tempC/(237.3+tempC)); return 0.567*tempC+0.393*vp+3.94; })();
 
     const wbgtSrc = wbgtF !== null ? 'Black Globe' : 'estimated';
-    console.log(`[HeatGuard] Raw \u2014 Temp: ${tempC.toFixed(1)}\u00B0C | RH: ${humidity}% | HI: ${rawHI.toFixed(1)}\u00B0C | WBGT: ${rawWBGT.toFixed(1)}\u00B0C (${wbgtSrc})`);
+    console.log('[HeatGuard] Raw: Temp ' + tempC.toFixed(1) + '°C | RH ' + humidity + '% | HI ' + rawHI.toFixed(1) + '°C | WBGT ' + rawWBGT.toFixed(1) + '°C (' + wbgtSrc + ')');
 
 
     // ── 2. Apply 24h rolling average from GitHub Actions data ─────────────
@@ -766,9 +766,9 @@ async function fetchLive() {
       if (rolling) {
         displayHI   = rolling.avgHI;
         displayWBGT = rolling.avgWBGT;
-        avgLabel    = ` · 24h avg (${rolling.n} readings)`;
+        avgLabel    = ' · 24h avg (' + rolling.n + ' readings)';
       } else {
-        avgLabel = ' · raw (pool building…)';
+        avgLabel = ' · raw (pool building...)';
       }
     } catch(ghErr) {
       console.warn('[HeatGuard] Rolling data unavailable, using raw:', ghErr.message);
@@ -891,7 +891,7 @@ function updateCountdown(msRemaining) {
     const badge = document.getElementById('stationTime');
     // Only show countdown if badge already has a time value (station loaded)
     if (badge && badge.dataset.hasTime === 'true') {
-      badge.textContent = badge.dataset.lastTime + \`  ↻ \${m}:\${s}\`;
+      badge.textContent = badge.dataset.lastTime + '  ↻ ' + m + ':' + s;
     }
   }, 1000);
 }
