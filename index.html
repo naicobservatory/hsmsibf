@@ -436,6 +436,9 @@ const stationIcon = L.icon({
 const stationMarker = L.marker([14.3249402, 120.8086893], { icon: stationIcon, zIndexOffset: 1000 })
   .addTo(map)
   .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>PPW Weather Station</b><br><span style="font-size:11px;color:#666">14.3249°N, 120.8087°E</span></div>');
+const stationMarker2 = L.marker([14.322429755684219, 120.7718108314786], { icon: stationIcon, zIndexOffset: 1000 })
+  .addTo(map)
+  .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>Naic DRRMO AWS</b><br><span style="font-size:11px;color:#666">14.3224°N, 120.7718°E</span></div>');
 
 function renderMap() {
   if (geoL) map.removeLayer(geoL);
