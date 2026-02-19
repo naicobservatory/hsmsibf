@@ -251,14 +251,41 @@ const topo      = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
 const map = L.map('map',{center:[14.3167,120.7667],zoom:13,layers:[dark]});
 L.control.layers({"Dark Mode":dark,"Light Grey":grey,"Standard Streets":streets,"Satellite Imagery":satellite,"Topographic":topo},null,{position:'topright'}).addTo(map);
 
-// ── COMBINED INDEX LOGIC ───────────────────────────────────────────────────
-// How it works:
-//   1. Map HI  → score 1-4 using hi_thresholds  + hi_tier_scores
-//   2. Map WBGT → score 1-4 using wbgt_thresholds + wbgt_tier_scores
-//   3. combined_index = (hi_score + wbgt_score) / 2  → 1, 1.5, 2, 2.5, 3, 3.5, 4
-//   4. Add vulnerability modifier (shifts index up/down per barangay)
-//   5. Round to nearest 0.5, clamp 1-4
-//   6. Look up impact description from impacts table
+// ════════════════════════════════════════════════════════════════════════════
+//  COMBINED INDEX — OPTION A: DOMINANT BLEND  (updated 2026-02)
+//
+//  FIX 1 — WBGT thresholds corrected for Philippine tropical baseline
+//    Old [18,25,28]°C: 18°C WBGT never occurs outdoors in PH — caused
+//    any normal morning (WBGT 23°C) to already return score 2.
+//    New [25,28,32]°C: aligned with DOLE OSHC / ISO 7933 Philippine standard.
+//      < 25°C  → score 1 (safe for all workers)
+//      25–28°C → score 2 (moderate)
+//      28–32°C → score 3 (high — limit heavy outdoor work)
+//      > 32°C  → score 4 (extreme — stop outdoor work)
+//
+//  FIX 2 — Dominant Blend replaces simple average
+//    Old: (hi_score + wbgt_score) / 2  → low score pulled the high one down
+//    New: max(hi,wbgt)×0.75 + min(hi,wbgt)×0.25
+//    The worse indicator leads (75%), the better one adds context (25%).
+//
+//  FIX 3 — Modifier re-centered around 0 (municipal mean = 0.436 subtracted)
+//    Old: all 30 barangays had modifier +0.31 to +0.59 — always pushed index UP
+//    New: resilient barangays → negative offset (index steps DOWN)
+//         average barangays  → near zero (no change)
+//         vulnerable barangays → positive offset (index steps UP)
+//    Range after re-centering: −0.13 to +0.16
+//
+//  Full pipeline:
+//    1. HI  (°C) → hi_score  1–4  via thresholds [27,33,42]   (PAGASA)
+//    2. WBGT(°C) → wbgt_score 1–4 via thresholds [25,28,32]   (DOLE OSHC)
+//    3. combined = max(hi_score, wbgt_score)×0.75 + min(hi_score, wbgt_score)×0.25
+//    4. centeredMod = rawVulnerabilityModifier(barangay) − 0.436
+//    5. final = roundHalf(combined + centeredMod), clamped 1–4
+//    6. look up impact description by key ("1","1.5","2","2.5","3","3.5","4")
+// ════════════════════════════════════════════════════════════════════════════
+
+// Municipal mean of all 30 raw vulnerability modifiers (pre-computed from PSA 2020 data)
+const MOD_MUNICIPAL_MEAN = 0.436;
 
 function getTierScore(value, thresholds, scores) {
   for (let i = 0; i < thresholds.length; i++) {
@@ -271,43 +298,66 @@ function roundHalf(n) {
   return Math.min(4, Math.max(1, Math.round(n * 2) / 2));
 }
 
-function vulnerabilityModifier(bd) {
-  if (!bd) return 0;
+/**
+ * Raw vulnerability modifier — weighted sum of 7 evidence-based indicators.
+ * Returns a value in the range ~0.31–0.59 before re-centering.
+ * Sources: PSA 2020 Census, Cavite Prov. Agriculturist, DOH, OSM, PNA.
+ *
+ * INCREASES risk (+): outdoor_workers, elderly_pct, infant_pct,
+ *                     urban_heat, health_access, flood_prone
+ * DECREASES risk (−): green_cover
+ */
+function rawVulnerabilityModifier(bd) {
+  if (!bd) return MOD_MUNICIPAL_MEAN; // unknown barangay → treat as municipal average
   const {
-    outdoor_workers = 0, elderly_pct   = 0, infant_pct  = 0,
-    green_cover     = 0, urban_heat     = 0,
-    health_access   = 0, flood_prone    = 0
+    outdoor_workers = 0, elderly_pct = 0, infant_pct = 0,
+    green_cover     = 0, urban_heat  = 0,
+    health_access   = 0, flood_prone = 0
   } = bd;
-  return (outdoor_workers * 0.25)   // farmers + fisherfolk (heat-exposed)
-       + (elderly_pct    * 0.35)   // 60+ population (PSA 2020)
-       + (infant_pct     * 0.15)   // 0–4 population (PSA 2020)
-       + (urban_heat     * 0.20)   // built-up / impervious surface
-       + (health_access  * 0.15)   // inverse coping capacity (DOH + OSM)
-       + (flood_prone    * 0.10)   // official flood-prone designation
-       - (green_cover    * 0.30);  // vegetation cover (cooling effect)
+  return (outdoor_workers * 0.25)
+       + (elderly_pct    * 0.35)
+       + (infant_pct     * 0.15)
+       + (urban_heat     * 0.20)
+       + (health_access  * 0.15)
+       + (flood_prone    * 0.10)
+       - (green_cover    * 0.30);
 }
 
+/**
+ * Core: compute per-barangay impact data from live HI + WBGT readings.
+ * Returns { index, key, impact, hiScore, wbgtScore, combined, centeredMod }
+ */
 function getImpactData(hi, wbgt, brgyName) {
-  const impacts    = MATRIX?.impacts     || BUILTIN_IMPACTS;
-  const hiThresh   = MATRIX?.hi_thresholds   || [27, 33, 42];
-  const wbgtThresh = MATRIX?.wbgt_thresholds || [18, 25, 28];
-  const hiScores   = MATRIX?.hi_tier_scores   || [1, 2, 3, 4];
+  const impacts    = MATRIX?.impacts        || BUILTIN_IMPACTS;
+  const hiThresh   = MATRIX?.hi_thresholds  || [27, 33, 42];
+  const wbgtThresh = MATRIX?.wbgt_thresholds || [25, 28, 32]; // FIX 1: PH-calibrated
+  const hiScores   = MATRIX?.hi_tier_scores  || [1, 2, 3, 4];
   const wbgtScores = MATRIX?.wbgt_tier_scores || [1, 2, 3, 4];
 
   const hiScore   = getTierScore(hi,   hiThresh,   hiScores);
   const wbgtScore = getTierScore(wbgt, wbgtThresh, wbgtScores);
-  const baseIndex = (hiScore + wbgtScore) / 2;
 
-  const brgyData   = MATRIX?.barangays?.[brgyName];
-  const mod        = vulnerabilityModifier(brgyData);
-  const finalIndex = roundHalf(baseIndex + mod);
+  // FIX 2: Dominant Blend — worse indicator leads (75%), better adds context (25%)
+  const combined = Math.max(hiScore, wbgtScore) * 0.75
+                 + Math.min(hiScore, wbgtScore) * 0.25;
+
+  // FIX 3: Re-centered modifier — subtracts municipal mean so modifier is relative
+  const brgyData    = MATRIX?.barangays?.[brgyName];
+  const rawMod      = rawVulnerabilityModifier(brgyData);
+  const centeredMod = rawMod - MOD_MUNICIPAL_MEAN;
+
+  const finalIndex = roundHalf(combined + centeredMod);
   const key        = String(finalIndex);
 
   return {
-    index: finalIndex, key,
-    impact: impacts[key] || BUILTIN_IMPACTS["2"],
-    hiScore, wbgtScore,
-    mod: brgyData ? mod : null
+    index:       finalIndex,
+    key,
+    impact:      impacts[key] || BUILTIN_IMPACTS["2"],
+    hiScore,
+    wbgtScore,
+    combined:    +combined.toFixed(3),
+    rawMod:      +rawMod.toFixed(3),
+    centeredMod: +centeredMod.toFixed(3)
   };
 }
 
@@ -416,12 +466,13 @@ function applyLive(bHI, bW, bT, bH) {
     const n   = f.properties._dn;
     const res = getImpactData(obsHI, obsWBGT, n);
     BS[n] = {
-      heatIndex: obsHI, wbgt: obsWBGT,
-      temperature: obsTemp, humidity: obsHum,
-      index: res.index, key: res.key,
-      impact: res.impact,
-      hiScore: res.hiScore, wbgtScore: res.wbgtScore,
-      mod: res.mod
+      heatIndex:   obsHI,       wbgt:       obsWBGT,
+      temperature: obsTemp,     humidity:   obsHum,
+      index:       res.index,   key:        res.key,
+      impact:      res.impact,
+      hiScore:     res.hiScore, wbgtScore:  res.wbgtScore,
+      combined:    res.combined,
+      rawMod:      res.rawMod,  centeredMod: res.centeredMod
     };
   });
   render();
@@ -446,10 +497,9 @@ function render() {
 
       let vulRows = '';
       if (vul) {
-        const modSign = (d.mod !== null && d.mod > 0) ? '+' : '';
-        const floodBadge = vul.flood_prone
-          ? `<span style="color:#f97316;font-size:9px;font-weight:700;background:rgba(249,115,22,.15);padding:1px 5px;border-radius:4px;margin-left:4px">FLOOD ZONE</span>`
-          : '';
+        const cm    = d.centeredMod ?? 0;
+        const cmSign = cm >= 0 ? '+' : '';
+        const cmColor = cm > 0.05 ? '#f97316' : cm < -0.05 ? '#22c55e' : '#8899b4';
         vulRows = `
           <tr><td colspan="2" style="padding-top:10px;padding-bottom:3px;color:#5a6a85;font-size:9px;text-transform:uppercase;letter-spacing:1.5px">
             Vulnerability Profile
@@ -474,14 +524,23 @@ function render() {
               <td style="text-align:right"><span style="font-family:'JetBrains Mono',monospace">${vul.health_access.toFixed(2)}</span>
               <span style="color:#5a6a85;font-size:9px;margin-left:4px">0=best, 1=none</span></td></tr>
           <tr><td style="color:#888">Flood Prone</td>
-              <td style="text-align:right">${vul.flood_prone ? '<span style="color:#f97316;font-weight:700">Yes</span>' : '<span style="color:#22c55e">No</span>'}</td></tr>
-          <tr><td style="color:#888;padding-top:4px">Vul. Modifier</td>
-              <td style="text-align:right;padding-top:4px;font-weight:700">
-                <span style="font-family:'JetBrains Mono',monospace;color:${d.mod > 0 ? '#f97316' : '#22c55e'}">
-                  ${d.mod !== null ? modSign + d.mod.toFixed(3) : '—'}
-                </span>
+              <td style="text-align:right">${vul.flood_prone
+                ? '<span style="color:#f97316;font-weight:700">Yes</span>'
+                : '<span style="color:#22c55e">No</span>'}</td></tr>
+          <tr style="border-top:1px solid #2a3550">
+              <td style="color:#888;padding-top:6px">Base Combined</td>
+              <td style="text-align:right;padding-top:6px">
+                <span style="font-family:'JetBrains Mono',monospace">${d.combined?.toFixed(2) ?? '—'}</span>
+                <span style="color:#5a6a85;font-size:9px;margin-left:4px">dominant blend</span>
               </td></tr>
-          <tr><td style="color:#888;font-size:9.5px" colspan="2">${vul._land_use || ''}</td></tr>`;
+          <tr><td style="color:#888">Vul. Offset</td>
+              <td style="text-align:right;font-weight:700">
+                <span style="font-family:'JetBrains Mono',monospace;color:${cmColor}">
+                  ${cmSign}${cm.toFixed(3)}
+                </span>
+                <span style="color:#5a6a85;font-size:9px;margin-left:4px">vs. municipal avg</span>
+              </td></tr>
+          <tr><td style="color:#888;font-size:9.5px;padding-top:4px" colspan="2">${vul._land_use || ''}</td></tr>`;
       }
 
       ly.bindPopup(`
