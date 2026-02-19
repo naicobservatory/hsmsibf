@@ -1,5 +1,5 @@
 {
-  "_notes": "HeatGuard Naic — Barangay Impact Matrix Database v2.0. All vulnerability fields are 0.0–1.0 scale. Data sourced from PSA 2020 Census, Cavite Provincial Agriculturist, DOH facility registry, OpenStreetMap, and published research. Fields prefixed with '_' are metadata/documentation only and are not used in formula calculations.",
+  "_notes": "HeatGuard Naic — Barangay Impact Matrix Database v2.1 (Option A: Dominant Blend). WBGT thresholds updated to Philippine DOLE OSHC / ISO 7933 standard. Combined index uses dominant blend formula (max×0.75 + min×0.25). Vulnerability modifier re-centered around municipal mean (0.436) so it differentiates barangays rather than inflating the whole municipality.",
   "_vulnerability_formula": "(outdoor_workers×0.25) + (elderly_pct×0.35) + (infant_pct×0.15) + (urban_heat×0.20) + (health_access×0.15) + (flood_prone×0.10) − (green_cover×0.30)",
   "_field_definitions": {
     "outdoor_workers": "Normalized fraction of working population in outdoor heat-exposed occupations (farmers + fisherfolk). 0=none, 1=50%+ of working pop. Source: PSA/Cavite Prov. Agriculturist.",
@@ -25,9 +25,9 @@
     42
   ],
   "wbgt_thresholds": [
-    18,
     25,
-    28
+    28,
+    32
   ],
   "hi_tier_scores": [
     1,
@@ -446,5 +446,12 @@
       "_land_use": "Mixed agri-residential (coastal/riverine, flood-prone)",
       "_data_source": "PSA 2020, OSM"
     }
+  },
+  "mod_municipal_mean": 0.436,
+  "_how_combined_index_works": "OPTION A — DOMINANT BLEND (updated 2026-02). Step 1: Map observed HI (°C) to hi_score 1–4 using hi_thresholds [27,33,42] (PAGASA). Step 2: Map observed WBGT (°C) to wbgt_score 1–4 using wbgt_thresholds [25,28,32] (DOLE OSHC / ISO 7933). Step 3: combined = max(hi_score, wbgt_score)×0.75 + min(hi_score, wbgt_score)×0.25  — worse indicator leads, better adds context. Step 4: rawMod = weighted sum of 7 vulnerability fields. Step 5: centeredMod = rawMod − mod_municipal_mean (0.436)  — re-centered so resilient barangays step DOWN, vulnerable step UP. Step 6: finalIndex = roundHalf(combined + centeredMod), clamped to 1–4. Step 7: Look up impact label, color, and description using finalIndex as key.",
+  "_fix_summary": {
+    "fix_1_wbgt_thresholds": "Old [18,25,28] assumed temperate climate. WBGT 23°C (typical PH morning) returned score 2. New [25,28,32] aligns with DOLE OSHC / ISO 7933: <25=safe, 25-28=moderate, 28-32=high, >32=extreme.",
+    "fix_2_dominant_blend": "Old simple average (hi+wbgt)/2 pulled scores toward the middle. New formula max×0.75+min×0.25 lets the worse index lead. Meaningful when HI and WBGT diverge (e.g. shaded vs. sunny conditions).",
+    "fix_3_recentered_mod": "Old modifier range +0.31 to +0.59 — always pushed every barangay index UP by 0.3–0.6. New: subtract mod_municipal_mean (0.436), giving range −0.13 to +0.16. Resilient barangays now step DOWN, vulnerable barangays step UP, average barangays unchanged."
   }
 }
