@@ -756,24 +756,26 @@ async function fetchLive() {
     const wbgtSrc = wbgtF !== null ? 'Black Globe' : 'estimated';
     console.log(`[HeatGuard] Raw \u2014 Temp: ${tempC.toFixed(1)}\u00B0C | RH: ${humidity}% | HI: ${rawHI.toFixed(1)}\u00B0C | WBGT: ${rawWBGT.toFixed(1)}\u00B0C (${wbgtSrc})`);
 
-    // ── 2. Apply rolling average (GitHub) or use raw if not configured ─────
+
+    // ── 2. Apply 24h rolling average from GitHub Actions data ─────────────
     let displayHI   = rawHI;
     let displayWBGT = rawWBGT;
     let avgLabel    = '';
 
-    if (GITHUB_ENABLED) {
-      try {
-        const { avgHI, avgWBGT, n } = await rollingUpdate(rawHI, rawWBGT);
-        displayHI   = avgHI;
-        displayWBGT = avgWBGT;
-        avgLabel    = ` \u00B7 24h avg (${n} readings)`;
-      } catch(ghErr) {
-        console.warn('[HeatGuard] Rolling avg unavailable, using raw:', ghErr.message);
-        avgLabel = ' \u00B7 raw (GitHub unavailable)';
+    try {
+      const rolling = await getRollingAverage();
+      if (rolling) {
+        displayHI   = rolling.avgHI;
+        displayWBGT = rolling.avgWBGT;
+        avgLabel    = ` · 24h avg (${rolling.n} readings)`;
+      } else {
+        avgLabel = ' · raw (pool building…)';
       }
-    } else {
-      avgLabel = ' \u00B7 raw (GitHub not configured)';
+    } catch(ghErr) {
+      console.warn('[HeatGuard] Rolling data unavailable, using raw:', ghErr.message);
+      avgLabel = ' · raw';
     }
+
 
     // ── 3. Update UI ──────────────────────────────────────────────────────
     const tsRaw = row.timestamp ?? data?.time ?? null;
