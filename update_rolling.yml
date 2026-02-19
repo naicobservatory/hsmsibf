@@ -3,13 +3,15 @@ name: Update Rolling Weather Data
 on:
   schedule:
     - cron: '*/5 * * * *'   # every 5 minutes
-  workflow_dispatch:         # allows manual trigger from GitHub UI
+  workflow_dispatch:         # manual trigger from Actions tab
+
+# Grant the built-in GITHUB_TOKEN write access to push commits
+permissions:
+  contents: write
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write        # needed to commit rolling_data.json
 
     steps:
       - name: Checkout repository
@@ -23,17 +25,18 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Fetch station data and update rolling pool
+      - name: Ensure data directory exists
+        run: mkdir -p data
+
+      - name: Fetch station and update rolling pool
         run: python3 .github/scripts/update_rolling.py
         env:
-          # STATION_URL is not sensitive — it's the public Google Apps Script URL
           STATION_URL: "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrQNVWBzA3cFbrbFaGdf1ErdVWGXpESBZpfr-he6WWLyDSPVNTqPoD7tOpepczUbCwjfI49A9wKqQUK5gI6nO6CfSL0IYTCfqY6rlbBklqKT_fM6okwWWgSYlcHC67Ytvu34zm15_7CqWPEQizwJGFy00lEDai77DnGq5TmoDehrNpQNvlslQMG3JfVUs9GO3FwolUvCgJE3wN_P6ecT-gbsVrB5_-w4hpdY1I9HdG13rsPu82L-g8YL0H26CqrP3IIpeK78rYwyWKQD0rwpBHFLWtWXay8QHSrFcZ6Z&lib=MTbhs9Zv5KTG9ImKpSDDDPCIObk80Qa1W"
 
-      - name: Commit updated rolling data
+      - name: Commit and push
         run: |
           git config user.name  "HeatGuard Bot"
           git config user.email "heatguard-bot@noreply.github.com"
           git add data/rolling_data.json
-          # Only commit if the file actually changed
-          git diff --staged --quiet || git commit -m "HeatGuard update $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git diff --staged --quiet || git commit -m "data: rolling update $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push
