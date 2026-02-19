@@ -323,24 +323,14 @@ header{
 // ============================================================
 //  CONFIG
 // ============================================================
-const STATION_URL       = "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrQNVWBzA3cFbrbFaGdf1ErdVWGXpESBZpfr-he6WWLyDSPVNTqPoD7tOpepczUbCwjfI49A9wKqQUK5gI6nO6CfSL0IYTCfqY6rlbBklqKT_fM6okwWWgSYlcHC67Ytvu34zm15_7CqWPEQizwJGFy00lEDai77DnGq5TmoDehrNpQNvlslQMG3JfVUs9GO3FwolUvCgJE3wN_P6ecT-gbsVrB5_-w4hpdY1I9HdG13rsPu82L-g8YL0H26CqrP3IIpeK78rYwyWKQD0rwpBHFLWtWXay8QHSrFcZ6Z&lib=MTbhs9Zv5KTG9ImKpSDDDPCIObk80Qa1W";
 const IMPACT_MATRIX_URL = "barangay_impact_matrix.json";
 const GEOJSON_URL       = "NaicSHP2.geojson";
 
-// ── Rolling Average — browser reads & writes rolling_data.json via GitHub API
-// ⚠️  IMPORTANT: Replace the token below with a fresh Fine-Grained Personal
-//     Access Token scoped to naicobservatory/hsmsibf with Contents read/write.
-//     The previous token was revoked by GitHub's automatic secret scanning.
-//     Generate one at: https://github.com/settings/tokens?type=beta
-//     NEVER commit the real token to the repo — paste it here only in the
-//     deployed copy, or inject it at build time via a placeholder.
-const GITHUB_OWNER    = "naicobservatory";
-const GITHUB_REPO     = "hsmsibf";
-const GITHUB_FILE     = "data/rolling_data.json";
-const GITHUB_TOKEN    = "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";
-const ROLLING_API_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
-const POOL_MINS       = 1440;  // 24-hour storage pool
-const AVG_WINDOW_MINS = 5;     // display average over this window
+// ── Rolling Data — Google Sheet (written by Apps Script every 5 min via Ecowitt API)
+// The portal only READS. No API keys needed — the web app URL is public.
+// Paste your deployed Apps Script web app URL below:
+const ROLLING_URL     = "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+const AVG_WINDOW_MINS = 5;     // display 5-minute rolling average
 
 // ============================================================
 //  STATE
@@ -671,228 +661,74 @@ function processGeo(raw) {
     const orig = f.properties.ADM4_EN || f.properties.name || f.properties.NAME || '';
     return {...f, properties:{...f.properties, _dn: matchName(orig)}};
   })};
-  // fetchLive is called by scheduleFetch — don't double-fire here
+  // fetchLive is called by scheduleFetch — no need to double-fire
 }
 
 // ============================================================
-//  FETCH LIVE WEATHER DATA
+//  FETCH LIVE DATA FROM GOOGLE SHEET
+//  Apps Script records data every 5 min via Ecowitt API.
+//  The portal reads the 24h pool, uses the latest reading as
+//  "live", and computes a 5-min rolling average of HI & WBGT.
+//  No API keys in frontend. Pure read-only.
 // ============================================================
-
-// Rothfusz Heat Index formula (NOAA/PAGASA standard)
-// Input: temp °C, relative humidity %  — returns HI in °C
-function heatIndex(tC, rh) {
-  const tF = tC * 9/5 + 32;
-  if (tF < 80) return tC;  // below threshold, HI ≈ temperature
-  const hi = -42.379 + 2.04901523*tF + 10.14333127*rh
-             - 0.22475541*tF*rh     - 0.00683783*tF*tF
-             - 0.05481717*rh*rh     + 0.00122874*tF*tF*rh
-             + 0.00085282*tF*rh*rh  - 0.00000199*tF*tF*rh*rh;
-  return (hi - 32) * 5/9;  // back to °C
-}
-
-// Helper: try many possible field name variants (handles any Google Sheet column naming)
-function pick(obj, ...keys) {
-  for (const k of keys) {
-    const v = obj[k] ?? obj[k.toLowerCase()] ?? obj[k.toUpperCase()];
-    if (v !== undefined && v !== null && v !== '') return parseFloat(v);
-  }
-  return null;
-}
-
-// ============================================================
-//  ROLLING AVERAGE — READ / WRITE / COMPUTE
-//  • rolling_data.json stores up to 24h of raw readings
-//  • Display uses only the last 5 minutes of that pool
-//  • SHA conflict retry (up to 3 attempts)
-//  • Write lock prevents concurrent browser writes
-// ============================================================
-
-let _writeLock = false;   // simple lock to prevent overlapping writes
-
-// Read rolling_data.json from GitHub. Returns { readings, sha }.
-async function ghRead() {
-  const headers = {
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28'
-  };
-  if (GITHUB_TOKEN && GITHUB_TOKEN !== 'YOUR_TOKEN_HERE')
-    headers['Authorization'] = 'Bearer ' + GITHUB_TOKEN;
-
-  const res = await fetch(ROLLING_API_URL + '?t=' + Date.now(), {   // cache-bust
-    headers
-  });
-  if (res.status === 404) return { readings: [], sha: null };
-  if (!res.ok) throw new Error('GitHub read HTTP ' + res.status);
-  const meta = await res.json();
-  const readings = JSON.parse(atob(meta.content.replace(/\n/g, '')));
-  return { readings: Array.isArray(readings) ? readings : [], sha: meta.sha };
-}
-
-// Write updated readings array back to GitHub (with retry on 409 SHA conflict).
-async function ghWrite(readings, sha, retries) {
-  retries = retries || 0;
-  const MAX_RETRIES = 3;
-
-  if (!GITHUB_TOKEN || GITHUB_TOKEN === 'YOUR_TOKEN_HERE') {
-    console.warn('[HeatGuard] No GitHub token configured — skipping write.');
-    return;
-  }
-
-  const body = {
-    message: 'HeatGuard rolling update ' + new Date().toISOString(),
-    content: btoa(unescape(encodeURIComponent(JSON.stringify(readings, null, 2)))),
-    ...(sha ? { sha } : {})
-  };
-  const res = await fetch(ROLLING_API_URL, {
-    method: 'PUT',
-    headers: {
-      'Authorization': 'Bearer ' + GITHUB_TOKEN,
-      'Accept': 'application/vnd.github+json',
-      'Content-Type': 'application/json',
-      'X-GitHub-Api-Version': '2022-11-28'
-    },
-    body: JSON.stringify(body)
-  });
-
-  // 409 = SHA conflict — re-read and retry
-  if (res.status === 409 && retries < MAX_RETRIES) {
-    console.warn('[HeatGuard] SHA conflict, retrying (' + (retries + 1) + '/' + MAX_RETRIES + ')...');
-    const fresh = await ghRead();
-    // Merge: add any readings from our batch that aren't already in remote
-    const remoteTsSet = new Set(fresh.readings.map(r => r.ts));
-    const merged = [...fresh.readings];
-    for (const r of readings) {
-      if (!remoteTsSet.has(r.ts)) merged.push(r);
-    }
-    merged.sort((a, b) => new Date(a.ts) - new Date(b.ts));
-    const cutoff = Date.now() - POOL_MINS * 60 * 1000;
-    const trimmed = merged.filter(r => new Date(r.ts).getTime() >= cutoff);
-    return ghWrite(trimmed, fresh.sha, retries + 1);
-  }
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error('GitHub write HTTP ' + res.status + ' — ' + (err.message || ''));
-  }
-}
-
-// Main: read pool → append → trim 24h → write back → return 5-min avg.
-async function getRollingAverage(rawHI, rawWBGT, tempC, humidity) {
-  // Prevent overlapping writes from double-fire
-  if (_writeLock) {
-    console.log('[HeatGuard] Write in progress, reading only...');
-  }
-
-  const { readings, sha } = await ghRead();
-  const now    = Date.now();
-  const poolCutoff  = now - POOL_MINS * 60 * 1000;        // 24h ago
-  const avgCutoff   = now - AVG_WINDOW_MINS * 60 * 1000;  // 5 min ago
-
-  // Append new reading with temp & rh for richer data
-  readings.push({
-    ts: new Date(now).toISOString(),
-    hi: +rawHI.toFixed(2),
-    wbgt: +rawWBGT.toFixed(2),
-    temp: +tempC.toFixed(2),
-    rh: +humidity.toFixed(1)
-  });
-
-  // Trim to 24h pool
-  const pool = readings.filter(r => new Date(r.ts).getTime() >= poolCutoff);
-
-  // Write back (fire-and-forget with lock guard)
-  if (!_writeLock) {
-    _writeLock = true;
-    ghWrite(pool, sha)
-      .then(() => console.log('[HeatGuard] GitHub write OK (' + pool.length + ' readings in pool)'))
-      .catch(e => console.warn('[HeatGuard] GitHub write failed:', e.message))
-      .finally(() => { _writeLock = false; });
-  }
-
-  // Compute 5-minute rolling average for display
-  const recent = pool.filter(r => new Date(r.ts).getTime() >= avgCutoff);
-
-  if (recent.length === 0) {
-    // No readings in the last 5 min — fall back to full pool average
-    const avgHI   = pool.reduce((s, r) => s + r.hi,   0) / pool.length;
-    const avgWBGT = pool.reduce((s, r) => s + r.wbgt, 0) / pool.length;
-    console.log('[HeatGuard] No recent 5-min data, using pool avg (' + pool.length + ' readings)');
-    return { avgHI, avgWBGT, n: pool.length, window: POOL_MINS, poolSize: pool.length };
-  }
-
-  const avgHI   = recent.reduce((s, r) => s + r.hi,   0) / recent.length;
-  const avgWBGT = recent.reduce((s, r) => s + r.wbgt, 0) / recent.length;
-
-  console.log('[HeatGuard] 5-min rolling avg (' + recent.length + ' of ' + pool.length + ' readings): HI ' + avgHI.toFixed(1) + '°C | WBGT ' + avgWBGT.toFixed(1) + '°C');
-  return { avgHI, avgWBGT, n: recent.length, window: AVG_WINDOW_MINS, poolSize: pool.length };
-}
-
 
 async function fetchLive() {
   const dot  = document.getElementById('cDot');
   const stat = document.getElementById('cStat');
   try {
-    // ── 1. Fetch raw station data ──────────────────────────────────────────
-    const res  = await fetch(STATION_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
-    const row  = Array.isArray(json) ? json[json.length - 1] : json;
-
-    // Real readings are nested inside raw_data.data (top-level fields are null)
-    const data    = row?.raw_data?.data;
-    const outdoor = data?.outdoor;
-    const bgt     = data?.black_globe_temperature;
-    if (!outdoor) throw new Error('raw_data.data.outdoor missing');
-
-    const val = obj => obj?.value != null ? parseFloat(obj.value) : null;
-
-    const tempF    = val(outdoor.temperature);
-    const humidity = val(outdoor.humidity);
-    const feelsF   = val(outdoor.feels_like) ?? val(outdoor.app_temp);
-    const wbgtF    = val(bgt?.wbgt);
-
-    if (tempF === null || humidity === null)
-      throw new Error('outdoor.temperature or outdoor.humidity missing');
-
-    const tempC  = (tempF - 32) * 5/9;
-    const rawHI  = feelsF !== null ? (feelsF - 32) * 5/9 : heatIndex(tempC, humidity);
-    const rawWBGT = wbgtF !== null
-      ? (wbgtF - 32) * 5/9
-      : (() => { const vp=(humidity/100)*6.105*Math.exp(17.27*tempC/(237.3+tempC)); return 0.567*tempC+0.393*vp+3.94; })();
-
-    const wbgtSrc = wbgtF !== null ? 'Black Globe' : 'estimated';
-    console.log('[HeatGuard] Raw: Temp ' + tempC.toFixed(1) + '°C | RH ' + humidity + '% | HI ' + rawHI.toFixed(1) + '°C | WBGT ' + rawWBGT.toFixed(1) + '°C (' + wbgtSrc + ')');
-
-
-    // ── 2. Apply 5-min rolling average from GitHub data pool ────────────
-    let displayHI   = rawHI;
-    let displayWBGT = rawWBGT;
-    let avgLabel    = '';
-
-    try {
-      const rolling = await getRollingAverage(rawHI, rawWBGT, tempC, humidity);
-      if (rolling) {
-        displayHI   = rolling.avgHI;
-        displayWBGT = rolling.avgWBGT;
-        avgLabel    = ' · ' + rolling.window + '-min avg (' + rolling.n + '/' + rolling.poolSize + ' readings)';
-      } else {
-        avgLabel = ' · raw (pool building...)';
-      }
-    } catch(ghErr) {
-      console.warn('[HeatGuard] Rolling data unavailable, using raw:', ghErr.message);
-      avgLabel = ' · raw';
+    if (!ROLLING_URL || ROLLING_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      throw new Error('ROLLING_URL not configured');
     }
 
+    // ── 1. Fetch the 24h pool from Google Sheet ──────────────────────
+    const res  = await fetch(ROLLING_URL);
+    if (!res.ok) throw new Error('Sheet HTTP ' + res.status);
+    const pool = await res.json();
 
-    // ── 3. Update UI ──────────────────────────────────────────────────────
-    const tsRaw = row.timestamp ?? data?.time ?? null;
-    const ts    = tsRaw ? new Date(tsRaw) : new Date();
+    if (!Array.isArray(pool) || pool.length === 0) {
+      throw new Error('No data in rolling sheet yet');
+    }
 
-    const timeStr = ts.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true});
+    // ── 2. Get latest reading for "live" display ─────────────────────
+    const sorted = pool.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const latest = sorted[sorted.length - 1];
+
+    const tempC    = parseFloat(latest.temp_c);
+    const humidity = parseFloat(latest.rh);
+    const rawHI    = parseFloat(latest.hi_c);
+    const rawWBGT  = parseFloat(latest.wbgt_c);
+    const source   = latest.source || 'unknown';
+
+    console.log('[HeatGuard] Latest: Temp ' + tempC.toFixed(1) + '°C | RH ' + humidity +
+                '% | HI ' + rawHI.toFixed(1) + '°C | WBGT ' + rawWBGT.toFixed(1) +
+                '°C (' + source + ') | Pool: ' + pool.length + ' readings');
+
+    // ── 3. Compute 5-min rolling average ─────────────────────────────
+    const now       = Date.now();
+    const avgCutoff = now - AVG_WINDOW_MINS * 60 * 1000;
+    const recent    = sorted.filter(r => new Date(r.timestamp).getTime() >= avgCutoff);
+
+    let displayHI, displayWBGT, avgLabel;
+
+    if (recent.length > 0) {
+      displayHI   = recent.reduce((s, r) => s + parseFloat(r.hi_c),   0) / recent.length;
+      displayWBGT = recent.reduce((s, r) => s + parseFloat(r.wbgt_c), 0) / recent.length;
+      avgLabel    = ' · ' + AVG_WINDOW_MINS + '-min avg (' + recent.length + '/' + pool.length + ')';
+      console.log('[HeatGuard] 5-min avg: HI ' + displayHI.toFixed(1) + '°C | WBGT ' + displayWBGT.toFixed(1) + '°C');
+    } else {
+      // No readings in last 5 min — use latest single reading
+      displayHI   = rawHI;
+      displayWBGT = rawWBGT;
+      avgLabel    = ' · latest (' + pool.length + ' in pool)';
+    }
+
+    // ── 4. Update UI ─────────────────────────────────────────────────
+    const ts      = new Date(latest.timestamp);
+    const timeStr = ts.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit', hour12:true });
     document.getElementById('stationTime').textContent = timeStr;
 
     dot.style.background = 'var(--green)';
-    stat.textContent = 'Live \u2014 ' + ts.toLocaleDateString('en-PH',{month:'short',day:'numeric'}) + avgLabel;
+    stat.textContent = 'Live \u2014 ' + ts.toLocaleDateString('en-PH', { month:'short', day:'numeric' }) + avgLabel;
 
     applyLive(displayHI, displayWBGT, tempC, humidity);
     document.getElementById('loadOv').classList.add('gone');
@@ -905,7 +741,7 @@ async function fetchLive() {
       document.getElementById('loadOv').innerHTML =
         '<div style="font-size:28px">\u26A0\uFE0F</div>' +
         '<div class="ltxt">Station Offline</div>' +
-        '<div class="ltxt2">Cannot read station data.<br>Check console (F12) for details.</div>' +
+        '<div class="ltxt2">Cannot read rolling data from Google Sheet.<br>Check console (F12) for details.</div>' +
         '<button onclick="fetchLive()" style="margin-top:14px;padding:8px 22px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:13px">\u21BB Retry</button>';
     }
   }
