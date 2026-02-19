@@ -88,6 +88,8 @@ header{
 .click-hint{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:800;background:rgba(17,24,39,.75);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:6px 16px;font-size:11px;color:var(--muted);pointer-events:none;white-space:nowrap;transition:opacity .4s}
 .click-hint.gone{opacity:0}
 .map-logo{position:absolute;bottom:18px;right:18px;z-index:800;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 2px 8px rgba(0,0,0,.4);pointer-events:none;object-fit:cover}
+.map-legend{position:absolute;bottom:18px;left:18px;z-index:800;background:rgba(17,24,39,.88);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.map-legend-title{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);font-weight:500;margin-bottom:2px}
 .lov{position:absolute;inset:0;background:rgba(10,14,23,.92);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .5s}
 .lov.gone{opacity:0;pointer-events:none}
 .spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
@@ -204,19 +206,6 @@ header{
     </div>
 
     <div class="card">
-      <div class="card-h"><span class="card-l">Combined Index Legend</span></div>
-      <div class="legend-grid">
-        <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div><span>No Significant Risk</span><span class="legend-idx">1.0</span></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:#86efac"></div><span>Low Risk</span><span class="legend-idx">1.5</span></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:#facc15"></div><span>Moderate Risk</span><span class="legend-idx">2.0</span></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:#fbbf24"></div><span>Moderate-High</span><span class="legend-idx">2.5</span></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:#f97316"></div><span>High Risk</span><span class="legend-idx">3.0</span></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div><span>Very High Risk</span><span class="legend-idx">3.5</span></div>
-        <div class="legend-item" style="grid-column:1/-1"><div class="legend-swatch" style="background:#b91c1c"></div><span>Extreme / Dangerous</span><span class="legend-idx">4.0</span></div>
-      </div>
-    </div>
-
-    <div class="card">
       <div class="card-h">
         <span class="card-l">Barangay Impact Index</span>
         <span class="badge" id="bCount" style="background:rgba(59,130,246,.15);color:var(--accent)">--</span>
@@ -239,6 +228,16 @@ header{
     </div>
     <div class="click-hint" id="clickHint">Click any barangay to view its detailed heat stress profile</div>
     <img src="logo.png" alt="Naic Observatory" class="map-logo">
+    <div class="map-legend">
+      <div class="map-legend-title">Combined Index Legend</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div><span>No Significant Risk</span><span class="legend-idx">1.0</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#86efac"></div><span>Low Risk</span><span class="legend-idx">1.5</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#facc15"></div><span>Moderate Risk</span><span class="legend-idx">2.0</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#fbbf24"></div><span>Moderate-High</span><span class="legend-idx">2.5</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#f97316"></div><span>High Risk</span><span class="legend-idx">3.0</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div><span>Very High Risk</span><span class="legend-idx">3.5</span></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#b91c1c"></div><span>Extreme / Dangerous</span><span class="legend-idx">4.0</span></div>
+    </div>
     <div class="lov" id="loadOv">
       <div class="spin"></div>
       <div class="ltxt">Loading HeatGuard</div>
