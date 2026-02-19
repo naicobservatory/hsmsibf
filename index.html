@@ -663,42 +663,112 @@ function processGeo(raw) {
 // ============================================================
 //  FETCH LIVE WEATHER DATA
 // ============================================================
+
+// Rothfusz Heat Index formula (NOAA/PAGASA standard)
+// Input: temp °C, relative humidity %  — returns HI in °C
+function heatIndex(tC, rh) {
+  const tF = tC * 9/5 + 32;
+  if (tF < 80) return tC;  // below threshold, HI ≈ temperature
+  const hi = -42.379 + 2.04901523*tF + 10.14333127*rh
+             - 0.22475541*tF*rh     - 0.00683783*tF*tF
+             - 0.05481717*rh*rh     + 0.00122874*tF*tF*rh
+             + 0.00085282*tF*rh*rh  - 0.00000199*tF*tF*rh*rh;
+  return (hi - 32) * 5/9;  // back to °C
+}
+
+// Helper: try many possible field name variants (handles any Google Sheet column naming)
+function pick(obj, ...keys) {
+  for (const k of keys) {
+    const v = obj[k] ?? obj[k.toLowerCase()] ?? obj[k.toUpperCase()];
+    if (v !== undefined && v !== null && v !== '') return parseFloat(v);
+  }
+  return null;
+}
+
 async function fetchLive() {
   const dot  = document.getElementById('cDot');
   const stat = document.getElementById('cStat');
   try {
     const res  = await fetch(STATION_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
-    const row  = Array.isArray(json) ? json[json.length-1] : json;
 
-    const tempC    = parseFloat(row.temperature ?? row.Temperature ?? row.temp ?? 0);
-    const humidity = parseFloat(row.humidity    ?? row.Humidity    ?? row.hum  ?? 0);
-    const feelF    = parseFloat(row.feels_like  ?? row.FeelsLike   ?? row.feelslike ?? 0);
+    // Support both array response (rows) and single-object response
+    const row = Array.isArray(json) ? json[json.length - 1] : json;
+    console.log('[HeatGuard] Station payload keys:', Object.keys(row));
+    console.log('[HeatGuard] Station payload:', row);
 
-    // Heat index: convert feels_like from station (Fahrenheit) to Celsius
-    const hiC = feelF > 80
-      ? (feelF - 32) * 5/9
-      : (tempC * 9/5 + 32) > 80
-        ? tempC
-        : tempC;
+    // Temperature — try all reasonable field names
+    const tempC = pick(row,
+      'temperature','Temperature','TEMPERATURE',
+      'temp_c','temp','Temp','ambient_temp','air_temp'
+    );
 
-    // WBGT approximation (Liljegren simplified)
-    const e    = (humidity / 100) * 6.105 * Math.exp(17.27 * tempC / (237.3 + tempC));
-    const wbgt = 0.567 * tempC + 0.393 * e + 3.94;
+    // Humidity
+    const humidity = pick(row,
+      'humidity','Humidity','HUMIDITY',
+      'relative_humidity','rh','RH','hum'
+    );
 
-    const ts = new Date(row.timestamp ?? row.Timestamp ?? Date.now());
+    if (tempC === null || humidity === null) {
+      throw new Error('Missing temperature or humidity fields. Got: ' + Object.keys(row).join(', '));
+    }
+
+    // Heat Index — prefer a pre-computed value from the station if available,
+    // otherwise calculate ourselves via the Rothfusz NOAA formula
+    let hiC = pick(row,
+      'heat_index','HeatIndex','heatindex','heat_index_c',
+      'feels_like','FeelsLike','feelslike','apparent_temp'
+    );
+
+    if (hiC !== null) {
+      // Station may send HI in °F — if suspiciously high for Celsius, convert
+      if (hiC > 60) hiC = (hiC - 32) * 5/9;
+    } else {
+      // Compute from temperature + humidity (Rothfusz formula)
+      hiC = heatIndex(tempC, humidity);
+    }
+
+    // WBGT approximation — prefer station value, else Liljegren simplified
+    let wbgt = pick(row, 'wbgt','WBGT','wet_bulb','wet_bulb_globe');
+    if (wbgt === null) {
+      const vp = (humidity / 100) * 6.105 * Math.exp(17.27 * tempC / (237.3 + tempC));
+      wbgt = 0.567 * tempC + 0.393 * vp + 3.94;
+    }
+
+    // Timestamp
+    const tsRaw = row.timestamp ?? row.Timestamp ?? row.datetime ?? row.DateTime ?? row.date ?? null;
+    const ts = tsRaw ? new Date(tsRaw) : new Date();
+    const tsValid = !isNaN(ts.getTime());
+
     document.getElementById('stationTime').textContent =
-      ts.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true});
+      (tsValid ? ts : new Date()).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true});
 
     dot.style.background = 'var(--green)';
-    stat.textContent     = 'Live \u2014 ' + ts.toLocaleDateString('en-PH',{month:'short',day:'numeric'});
+    stat.textContent     = 'Live \u2014 ' + (tsValid ? ts : new Date())
+      .toLocaleDateString('en-PH',{month:'short',day:'numeric'});
+
+    console.log('[HeatGuard] Parsed — Temp:', tempC, '\u00B0C | Humidity:', humidity,
+                '% | HI:', hiC.toFixed(1), '\u00B0C | WBGT:', wbgt.toFixed(1), '\u00B0C');
 
     applyLive(hiC, wbgt, tempC, humidity);
     document.getElementById('loadOv').classList.add('gone');
-  } catch(e) {
+
+  } catch(err) {
     dot.style.background = 'var(--red)';
-    stat.textContent     = 'Connection error';
-    console.error(e);
+    stat.textContent     = 'Station error — see console';
+    console.error('[HeatGuard] fetchLive error:', err.message);
+
+    // Show helpful message in loading overlay if data never loaded
+    if (Object.keys(BS).length === 0) {
+      document.getElementById('loadOv').innerHTML =
+        '<div style="font-size:28px">\u26A0\uFE0F</div>' +
+        '<div class="ltxt">Station Offline</div>' +
+        '<div class="ltxt2" style="max-width:300px">Cannot reach weather station.<br>' +
+        'Check browser console (F12) for details.<br>' +
+        '<span style="font-size:10px;opacity:.6;word-break:break-all">' + STATION_URL.slice(0,60) + '&#8230;</span></div>' +
+        '<button onclick="fetchLive()" style="margin-top:12px;padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:13px">\u21BB Retry</button>';
+    }
   }
 }
 
