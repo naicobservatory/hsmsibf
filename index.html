@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>HeatGuard Naic — Impact-Based Heat Stress Portal</title>
+<title>Heat Stress Monitoring Portal — Impact-Based Heat Stress Portal</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,7 +38,7 @@ header{
 }
 .brand{display:flex;align-items:center;gap:14px}
 .brand-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--orange),var(--red));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.brand h1{font-family:'Playfair Display',serif;font-weight:900;font-size:20px;letter-spacing:-.5px;background:linear-gradient(135deg,#fff,#8899b4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand h1{font-family:'Playfair Display',serif;font-weight:900;font-size:17px;letter-spacing:-.5px;background:linear-gradient(135deg,#fff,#8899b4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .brand small{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
 .hstatus{display:flex;align-items:center;gap:20px}
 .chip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
@@ -163,7 +163,7 @@ header{
   <header>
     <div class="brand">
       <div class="brand-icon">&#127777;</div>
-      <div><h1>HeatGuard Naic</h1><small>Impact-Based Heat Stress Portal</small></div>
+      <div><h1>Heat Stress Monitoring Portal</h1><small>Impact-Based Heat Stress Portal</small></div>
     </div>
     <div class="hstatus">
       <div class="chip"><span class="live-dot" id="cDot"></span><span id="cStat">Initializing&#8230;</span></div>
@@ -178,7 +178,7 @@ header{
 
     <div class="card">
       <div class="card-h">
-        <span class="card-l">Live Station Readings</span>
+        <span class="card-l">5 Min Average Station Readings</span>
         <span class="badge" id="stationTime" style="background:rgba(59,130,246,.15);color:var(--accent)">--</span>
       </div>
       <div class="readings-grid">
@@ -732,7 +732,7 @@ async function fetchLive() {
     dot.style.background = 'var(--green)';
     const dayName = ts.toLocaleDateString('en-PH', { weekday:'long' });
     const fullDate = ts.toLocaleDateString('en-PH', { month:'long', day:'numeric', year:'numeric' });
-    stat.textContent = 'Live ' + fullDate + ' (' + dayName + ')' + avgLabel;
+    stat.textContent = 'Live ' + fullDate + ' (' + dayName + ')';
 
     applyLive(displayHI, displayWBGT, tempC, humidity);
     document.getElementById('loadOv').classList.add('gone');
