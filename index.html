@@ -426,6 +426,17 @@ const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{att
 const map = L.map('map',{center:[14.3167,120.7667],zoom:13,layers:[dark]});
 L.control.layers({"Dark":dark,"Light":grey,"Streets":streets,"Satellite":satellite,"Topo":topo},null,{position:'topright'}).addTo(map);
 
+// ── AWS Station Marker ──────────────────────────────────────
+const stationIcon = L.icon({
+  iconUrl: 'weatherstation.png',
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -22]
+});
+const stationMarker = L.marker([14.3249402, 120.8086893], { icon: stationIcon, zIndexOffset: 1000 })
+  .addTo(map)
+  .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>Naic AWS Station</b><br><span style="font-size:11px;color:#666">14.3249°N, 120.8087°E</span></div>');
+
 function renderMap() {
   if (geoL) map.removeLayer(geoL);
   geoL = L.geoJSON(geoData, {
