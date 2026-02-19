@@ -429,9 +429,9 @@ L.control.layers({"Dark":dark,"Light":grey,"Streets":streets,"Satellite":satelli
 // ── AWS Station Marker ──────────────────────────────────────
 const stationIcon = L.icon({
   iconUrl: 'weatherstation.png',
-  iconSize: [30, 30],
-  iconAnchor: [15, 15],
-  popupAnchor: [0, -17]
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+  popupAnchor: [0, -13]
 });
 const stationMarker = L.marker([14.3249402, 120.8086893], { icon: stationIcon, zIndexOffset: 1000 })
   .addTo(map)
