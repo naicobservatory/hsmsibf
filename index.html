@@ -332,7 +332,9 @@ const GEOJSON_URL       = "NaicSHP2.geojson";
 // GitHub Actions workflow running server-side, so no token is needed here.
 //
 // raw.githubusercontent.com serves public repo files with no authentication.
-const ROLLING_JSON_URL = "https://raw.githubusercontent.com/naicobservatory/hsmsibf/main/data/rolling_data.json";
+// GitHub API endpoint — always returns the latest committed version, never cached
+// raw.githubusercontent.com is CDN-cached for up to 5 min and ignores cache-busting
+const ROLLING_API_URL  = "https://api.github.com/repos/naicobservatory/hsmsibf/contents/data/rolling_data.json";
 const ROLLING_MINS     = 1440;  // 24-hour pool — Actions trims anything older
 
 // ============================================================
@@ -700,14 +702,20 @@ function pick(obj, ...keys) {
 // ============================================================
 
 async function getRollingAverage() {
-  // Cache-bust so we always get the latest commit, not a CDN cache
-  const url = ROLLING_JSON_URL + '?t=' + Date.now();
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Rolling data HTTP ' + res.status);
-  const readings = await res.json();
+  // Use GitHub API — unlike raw.githubusercontent.com, this is never CDN-cached
+  // Response: { content: "<base64>", ... }
+  const res = await fetch(ROLLING_API_URL, {
+    headers: { 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }
+  });
+  if (res.status === 404) { console.log('[HeatGuard] rolling_data.json not found yet'); return null; }
+  if (!res.ok) throw new Error('GitHub API HTTP ' + res.status);
+
+  const meta     = await res.json();
+  const decoded  = atob(meta.content.replace(/\n/g, ''));
+  const readings = JSON.parse(decoded);
   if (!Array.isArray(readings) || !readings.length) return null;
 
-  // Trim to 24-hour window (Actions should already do this, but be safe)
+  // Trim to 24-hour window (Actions trims too, but be safe client-side)
   const cutoff = Date.now() - ROLLING_MINS * 60 * 1000;
   const pool   = readings.filter(r => new Date(r.ts).getTime() >= cutoff);
   if (!pool.length) return null;
@@ -853,12 +861,14 @@ window.onload = async () => {
 //  and repeating with a clean setInterval every 5 minutes.
 // ============================================================
 function scheduleFetch() {
+  // Fire immediately so the map updates as soon as GeoJSON is loaded
+  fetchLive();
+
+  // Then fire again at every 5-minute clock boundary (:00, :05, :10, :15...)
   const INTERVAL    = 5 * 60 * 1000;
   const now         = Date.now();
-  // ms remaining until the next 5-minute clock mark
   const msUntilNext = INTERVAL - (now % INTERVAL);
 
-  // Wait until the next boundary, then fire and start a clean repeating interval
   setTimeout(function() {
     fetchLive();
     setInterval(fetchLive, INTERVAL);
