@@ -1,0 +1,55 @@
+name: Update Rolling Weather Data
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Ensure data directory exists
+        run: mkdir -p data
+
+      - name: Fetch station and update rolling pool
+        run: python3 .github/scripts/update_rolling.py
+        env:
+          STATION_URL: "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrQNVWBzA3cFbrbFaGdf1ErdVWGXpESBZpfr-he6WWLyDSPVNTqPoD7tOpepczUbCwjfI49A9wKqQUK5gI6nO6CfSL0IYTCfqY6rlbBklqKT_fM6okwWWgSYlcHC67Ytvu34zm15_7CqWPEQizwJGFy00lEDai77DnGq5TmoDehrNpQNvlslQMG3JfVUs9GO3FwolUvCgJE3wN_P6ecT-gbsVrB5_-w4hpdY1I9HdG13rsPu82L-g8YL0H26CqrP3IIpeK78rYwyWKQD0rwpBHFLWtWXay8QHSrFcZ6Z&lib=MTbhs9Zv5KTG9ImKpSDDDPCIObk80Qa1W"
+
+      - name: Show current file state (for debugging)
+        run: |
+          echo "=== data/rolling_data.json ==="
+          cat data/rolling_data.json || echo "(file does not exist yet)"
+          echo "=== git status ==="
+          git status
+
+      - name: Commit and push
+        run: |
+          git config user.name  "HeatGuard Bot"
+          git config user.email "heatguard-bot@noreply.github.com"
+          git add data/rolling_data.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit (file unchanged)"
+          else
+            git commit -m "data: rolling update $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push origin HEAD
+            echo "Push successful."
+          fi
