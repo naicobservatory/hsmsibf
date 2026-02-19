@@ -429,13 +429,13 @@ L.control.layers({"Dark":dark,"Light":grey,"Streets":streets,"Satellite":satelli
 // ── AWS Station Marker ──────────────────────────────────────
 const stationIcon = L.icon({
   iconUrl: 'weatherstation.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -22]
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+  popupAnchor: [0, -17]
 });
 const stationMarker = L.marker([14.3249402, 120.8086893], { icon: stationIcon, zIndexOffset: 1000 })
   .addTo(map)
-  .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>Naic AWS Station</b><br><span style="font-size:11px;color:#666">14.3249°N, 120.8087°E</span></div>');
+  .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>PPW Weather Station</b><br><span style="font-size:11px;color:#666">14.3249°N, 120.8087°E</span></div>');
 
 function renderMap() {
   if (geoL) map.removeLayer(geoL);
