@@ -87,6 +87,7 @@ header{
 .odiv{width:1px;height:28px;background:var(--border)}
 .click-hint{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:800;background:rgba(17,24,39,.75);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:6px 16px;font-size:11px;color:var(--muted);pointer-events:none;white-space:nowrap;transition:opacity .4s}
 .click-hint.gone{opacity:0}
+.map-logo{position:absolute;bottom:18px;right:18px;z-index:800;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 2px 8px rgba(0,0,0,.4);pointer-events:none;object-fit:cover}
 .lov{position:absolute;inset:0;background:rgba(10,14,23,.92);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .5s}
 .lov.gone{opacity:0;pointer-events:none}
 .spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
@@ -237,6 +238,7 @@ header{
       <div class="os"><div class="osv" id="oIdx">--</div><div class="osl">Combined Index</div></div>
     </div>
     <div class="click-hint" id="clickHint">Click any barangay to view its detailed heat stress profile</div>
+    <img src="logo.png" alt="Naic Observatory" class="map-logo">
     <div class="lov" id="loadOv">
       <div class="spin"></div>
       <div class="ltxt">Loading HeatGuard</div>
