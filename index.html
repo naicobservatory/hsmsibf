@@ -84,6 +84,10 @@ header{
 .impact-index{font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;line-height:1}
 .impact-label{font-size:13px;font-weight:700}
 .impact-desc{font-size:11px;line-height:1.75;color:var(--muted);margin-top:8px}
+.lang-toggle{display:flex;gap:3px;margin-top:8px}
+.lang-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--dim);transition:all .15s;font-weight:600;letter-spacing:.5px}
+.lang-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.lang-btn.active-lang{background:rgba(59,130,246,.15);border-color:rgba(59,130,246,.4);color:var(--accent)}
 .legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .legend-item{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:8px;border:1px solid rgba(255,255,255,.06);font-size:10.5px}
 .legend-swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0}
@@ -364,6 +368,11 @@ header{
           <span class="impact-label" id="miLabel">Loading&#8230;</span>
         </div>
         <div class="impact-desc" id="miDesc">Syncing with station and database&#8230;</div>
+        <div class="lang-toggle">
+          <button class="lang-btn active-lang" onclick="switchLang('en')">EN</button>
+          <button class="lang-btn" onclick="switchLang('tl')">TAG</button>
+          <button class="lang-btn" onclick="switchLang('ceb')">CEB</button>
+        </div>
       </div>
     </div>
 
@@ -530,6 +539,89 @@ const IMPACTS = {
 };
 
 // ============================================================
+//  TAGALOG TRANSLATIONS
+// ============================================================
+const IMPACTS_TL = {
+  "1":  {label:"Walang Makabuluhang Panganib", description:"Maaaring magpatuloy ang lahat ng aktibidad sa labas nang walang panganib. Ligtas ang mga manggagawang nakalantad sa araw tulad ng mga magsasaka, traffic enforcer, construction worker, at mga tsuper ng pampublikong sasakyan mula sa epekto ng init. Maaaring ipagpatuloy ng mga mag-aaral at guro ang kanilang mga gawain kahit sa labas. Sa pangkalahatan, walang inaasahang panganib dulot ng init sa komunidad."},
+  "1.5":{label:"Mababang Panganib", description:"Maaari pa ring magpatuloy ang mga aktibidad sa labas ngunit may mga pag-iingat. Ang mga manggagawa tulad ng mga magsasaka, construction worker, traffic enforcer, at tsuper ng pampublikong sasakyan ay maaaring magpatuloy sa normal na trabaho. Ligtas pa rin ang mga aktibidad sa paaralan tulad ng PE, recess, at palakasan para sa mga bata at guro. Gayunpaman, pinapayuhan na ang regular na pag-inom ng tubig."},
+  "2":  {label:"Katamtamang Panganib", description:"Katamtamang panganib ng Heat Stress. Maaaring makaranas ng dehydration ang mga magsasaka at construction worker kung hindi regular na umiinom ng tubig. Maaaring magsimulang magkaroon ng pulikat sa kalamnan habang nagbubuhat ng mabibigat. Ang mga traffic enforcer ay maaaring makaranas ng pagkapagod dahil sa init na magpapababa ng kanilang pagka-alerto. Ang mga tsuper ng PUV ay maaaring maging iritado at bumagal ang reaksyon kapag walang aircon. Kailangang bantayan ang mga mag-aaral na naglalaro ng mabibigat na laro. Ang mga matatanda at may sakit sa puso ay mas mataas ang panganib ng pagkahimatay kapag nakatayo nang matagal sa araw."},
+  "2.5":{label:"Katamtaman-Mataas na Panganib", description:"Katamtaman hanggang mataas na panganib ng Heat Stress. Tiyak na makakaranas ng dehydration ang mga magsasaka at construction worker kapag hindi regular na umiinom ng tubig. Magkakaroon ng pulikat sa kalamnan habang nagbubuhat ng mabibigat. Ang mga traffic enforcer ay makakaranas ng matinding pagkapagod na magpapababa ng kanilang pagka-alerto. Ang mga tsuper ng PUV ay maaaring maging iritado at bumagal ang reaksyon. Ang mga mag-aaral na naglalaro ng mabibigat na laro ay kailangang bantayan nang mabuti. Ang publiko, lalo na ang mga matatanda at may sakit sa puso, ay mas mataas ang panganib ng pagkahimatay sa araw."},
+  "3":  {label:"Mataas na Panganib", description:"Mataas na Panganib ng Heat Exhaustion! Mga magsasaka at construction worker: sapilitang 15-minutong pahinga sa lilim bawat oras. Mapanganib ang paggamit ng mabibigat na makinarya dahil sa pagkahilo. Mga traffic enforcer: mapanganib ang pagkalantad sa araw nang higit sa 6 na oras; kailangan ng shift rotation. Mga tsuper ng PUV: maaaring mag-overheat ang makina; ang pagkapagod ng tsuper ay nagdadagdag sa panganib ng aksidente. Mga Mag-aaral: DAPAT LIMITAHAN ANG MGA AKTIBIDAD SA LABAS. Ilipat ang PE classes sa loob o sa maagang umaga. Ang mga bulnerableng grupo (sanggol, matatanda) ay dapat manatili sa malamig na kapaligiran."},
+  "3.5":{label:"Napakataas na Panganib", description:"Mataas na Panganib ng Heat Exhaustion! Ang kondisyon ng init ay lubhang pabor sa masamang epekto sa kalusugan ng lahat ng indibidwal na nakalantad sa labas at mabigat na pisikal na aktibidad. Ang mga outdoor worker kabilang ang mga magsasaka, construction worker, at traffic enforcer ay may mataas na posibilidad ng heat cramps o exhaustion. Ang mga pasahero ng pampublikong sasakyan ay nasa malaking panganib din. Bawasan ang lahat ng hindi kinakailangang paglabas."},
+  "4":  {label:"Matinding Panganib / Mapanganib", description:"Mapanganib na kondisyon ng init! Lahat ng sektor na nakatrabaho sa labas ay may napakataas na panganib ng heat stroke. Itigil kaagad ang lahat ng hindi kinakailangang aktibidad sa labas. Siguraduhing ang lahat ng mga bulnerableng indibidwal (matatanda, sanggol, outdoor workers) ay nasa malamig na kapaligiran. Ang mga serbisyong pang-emerhensiya ay dapat nakaalerto."}
+};
+
+// ============================================================
+//  CEBUANO TRANSLATIONS
+// ============================================================
+const IMPACTS_CEB = {
+  "1":  {label:"Walay Makabuluhan nga Peligro", description:"Mahimong magpadayon ang tanang kalihokan sa gawas nga walay peligro. Luwas ang mga trabahante nga kanunay nagtrabaho sa init sama sa mga mag-uuma, traffic enforcer, construction worker, ug mga drayber sa publikong sakyanan gikan sa epekto sa kainit. Mahimong magpadayon ang mga estudyante ug mga magtutudlo sa ilang mga buluhaton bisan sa gawas. Sa kinatibuk-an, walay gipaabot nga peligro tungod sa kainit sa komunidad."},
+  "1.5":{label:"Ubos nga Peligro", description:"Mahimo pa nga magpadayon ang mga kalihokan sa gawas apan kinahanglan mag-amping. Ang mga trabahante sama sa mga mag-uuma, construction worker, traffic enforcer, ug drayber sa publikong sakyanan mahimong magpadayon sa normal nga trabaho. Luwas pa gihapon ang mga kalihokan sa eskwelahan sama sa PE, recess, ug isports alang sa mga bata ug magtutudlo. Apan, gisugyot na ang regular nga pag-inom og tubig."},
+  "2":  {label:"Kasarangan nga Peligro", description:"Kasarangan nga peligro sa Heat Stress. Mahimong masinati sa mga mag-uuma ug construction worker ang dehydration kung dili regular nga moinom og tubig. Mahimong magsugod ang paglisod sa kaunoran kung maghagdaw og bug-at. Ang mga traffic enforcer mahimong masinati og kakapoy tungod sa kainit nga makapamenos sa ilang pagka-alerto. Ang mga drayber sa PUV mahimong dali masuko ug mohinay ang reaksyon kung walay aircon. Kinahanglan bantayan ang mga estudyante nga nagdula og kusog nga dula. Ang mga tigulang ug may sakit sa kasingkasing mas taas ang peligro sa pagkahimatay kung dugay nga nagtindog ilalom sa adlaw."},
+  "2.5":{label:"Kasarangan-Taas nga Peligro", description:"Kasarangan hangtod taas nga peligro sa Heat Stress. Segurado nga masinati sa mga mag-uuma ug construction worker ang dehydration kung dili regular nga moinom og tubig. Moabot ang paglisod sa kaunoran kung maghagdaw og bug-at. Ang mga traffic enforcer makasinati og grabeng kakapoy nga makapamenos sa ilang pagka-alerto. Ang mga drayber sa PUV mahimong dali masuko ug mohinay ang reaksyon. Ang mga estudyante nga nagdula og kusog nga dula kinahanglan bantayan pag-ayo. Ang publiko, ilabi na ang mga tigulang ug may sakit sa kasingkasing, mas taas ang peligro sa pagkahimatay ilalom sa adlaw."},
+  "3":  {label:"Taas nga Peligro", description:"Taas nga Peligro sa Heat Exhaustion! Mga mag-uuma ug construction worker: kinahanglan ang 15 minutos nga pahulay sa landong matag oras. Peligroso ang paggamit og bug-at nga makinarya tungod sa pagkalipong. Mga traffic enforcer: peligroso ang pagka-expose sa adlaw og sobra sa 6 ka oras; kinahanglan og shift rotation. Mga drayber sa PUV: mahimong mo-overheat ang makina; ang kakapoy sa drayber nagdugang sa peligro sa aksidente. Mga Estudyante: KINAHANGLAN LIMITAHAN ANG MGA KALIHOKAN SA GAWAS. Ibalhin ang PE classes sa sulod o sa sayo sa buntag. Ang mga bulnerable nga grupo (masuso, tigulang) kinahanglan magpabilin sa bugnaw nga palibot."},
+  "3.5":{label:"Taas Kaayo nga Peligro", description:"Taas nga Peligro sa Heat Exhaustion! Ang kahimtang sa kainit paborable kaayo alang sa dautang epekto sa panglawas sa tanang indibidwal nga na-expose sa gawas ug bug-at nga pisikal nga kalihokan. Ang mga outdoor worker lakip ang mga mag-uuma, construction worker, ug traffic enforcer adunay taas nga posibilidad sa heat cramps o exhaustion. Ang mga pasahero sa publikong sakyanan naa usab sa dakong peligro. Gamaya ang tanang dili kinahanglanon nga paggawas."},
+  "4":  {label:"Grabeng Peligro / Peligroso", description:"Peligroso nga kahimtang sa kainit! Ang tanang sektor nga nagtrabaho sa gawas adunay taas kaayo nga peligro sa heat stroke. Ihunong dayon ang tanang dili kinahanglanon nga kalihokan sa gawas. Siguraduha nga ang tanang mga bulnerable nga indibidwal (mga tigulang, mga masuso, outdoor workers) naa sa bugnaw nga palibot. Ang mga serbisyo sa emerhensiya kinahanglan andam nga moresponde."}
+};
+
+// ============================================================
+//  LANGUAGE SWITCHING
+// ============================================================
+let currentLang = 'en';
+
+function switchLang(lang) {
+  currentLang = lang;
+  // Update toggle button styles
+  document.querySelectorAll('.lang-btn').forEach(function(b) {
+    b.classList.toggle('active-lang', b.textContent.trim() === {en:'EN',tl:'TAG',ceb:'CEB'}[lang]);
+  });
+  // Re-render sidebar impact description
+  refreshLangDesc();
+  // Re-render detail panel if open
+  if (activeB) refreshDetailLang();
+}
+
+function getLocalizedImpact(key) {
+  var base = IMPACTS[key] || IMPACTS["2"];
+  if (currentLang === 'tl' && IMPACTS_TL[key]) {
+    return { label: IMPACTS_TL[key].label, description: IMPACTS_TL[key].description, color: base.color, bg: base.bg };
+  }
+  if (currentLang === 'ceb' && IMPACTS_CEB[key]) {
+    return { label: IMPACTS_CEB[key].label, description: IMPACTS_CEB[key].description, color: base.color, bg: base.bg };
+  }
+  return base;
+}
+
+function refreshLangDesc() {
+  // Find current worst index from sidebar display
+  var idxText = document.getElementById('miIndex').textContent;
+  if (!idxText || idxText === '--') return;
+  var idx = parseFloat(idxText);
+  if (isNaN(idx)) return;
+  var key = String(idx % 1 === 0 ? idx.toFixed(0) : idx.toFixed(1));
+  // Ensure key matches IMPACTS keys (1, 1.5, 2, etc.)
+  if (!IMPACTS[key]) key = String(Math.round(idx * 2) / 2);
+  var loc = getLocalizedImpact(key);
+  document.getElementById('miLabel').textContent = loc.label;
+  document.getElementById('miDesc').textContent = loc.description;
+}
+
+function refreshDetailLang() {
+  var el = document.getElementById('dDesc');
+  var idxEl = document.getElementById('dIdxNum');
+  if (!el || !idxEl) return;
+  var idx = parseFloat(idxEl.textContent);
+  if (isNaN(idx)) return;
+  var key = String(idx % 1 === 0 ? idx.toFixed(0) : idx.toFixed(1));
+  if (!IMPACTS[key]) key = String(Math.round(idx * 2) / 2);
+  var loc = getLocalizedImpact(key);
+  el.textContent = loc.description;
+  // Also update the label in the detail badge
+  var lblEl = document.getElementById('dIdxLabel');
+  if (lblEl) lblEl.textContent = loc.label;
+}
+
+// ============================================================
 //  COMBINED INDEX — OPTION A: DOMINANT BLEND
 //  FIX 1: WBGT thresholds [25,28,32] — DOLE OSHC / ISO 7933 PH standard
 //  FIX 2: max(hi,wbgt)x0.75 + min(hi,wbgt)x0.25
@@ -690,9 +782,10 @@ function updateSidebar(hi, wbgt, temp, hum) {
   miBox.style.borderColor = wi.color + '55';
   document.getElementById('miIndex').textContent = worst.index.toFixed(1);
   document.getElementById('miIndex').style.color = wi.color;
-  document.getElementById('miLabel').textContent = wi.label;
+  var locWi = getLocalizedImpact(worst.key);
+  document.getElementById('miLabel').textContent = locWi.label;
   document.getElementById('miLabel').style.color = wi.color;
-  document.getElementById('miDesc').textContent  = wi.description;
+  document.getElementById('miDesc').textContent  = locWi.description;
   document.getElementById('miBadge').textContent  = 'IDX ' + worst.index.toFixed(1);
   document.getElementById('miBadge').style.background = wi.bg;
   document.getElementById('miBadge').style.color       = wi.color;
@@ -775,7 +868,8 @@ function fillPanel(name) {
   badge.style.borderColor = col + '66';
   document.getElementById('dIdxNum').textContent   = d.index.toFixed(1);
   document.getElementById('dIdxNum').style.color   = col;
-  document.getElementById('dIdxLabel').textContent = imp.label;
+  var locImp = getLocalizedImpact(d.key);
+  document.getElementById('dIdxLabel').textContent = locImp.label;
   document.getElementById('dIdxLabel').style.color = col;
   document.getElementById('dLandUse').textContent  = vul?._land_use || '';
 
@@ -783,7 +877,7 @@ function fillPanel(name) {
   const ic = document.getElementById('dImpactCard');
   ic.style.background  = imp.bg;
   ic.style.borderColor = col + '44';
-  document.getElementById('dDesc').textContent = imp.description;
+  document.getElementById('dDesc').textContent = locImp.description;
 
   // --- Station readings ---
   document.getElementById('dHI').textContent   = d.heatIndex;
