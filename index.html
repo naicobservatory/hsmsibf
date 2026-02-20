@@ -184,6 +184,124 @@ header{
 
 /* Leaflet layer control override */
 .leaflet-control-layers{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:8px!important}
+/* ================================================================
+   MOBILE RESPONSIVE — screens narrower than 768px
+   Layout: header (compact) → map (full width) → sidebar (bottom sheet)
+   Detail panel: full-width overlay
+   ================================================================ */
+@media (max-width: 768px) {
+  /* Stack everything vertically */
+  .app{
+    grid-template-columns:1fr !important;
+    grid-template-rows:auto 1fr auto;
+    height:100vh;
+    overflow:hidden;
+  }
+  .app.panel-open{grid-template-columns:1fr !important}
+
+  /* --- HEADER compact --- */
+  header{padding:0 12px;height:auto;min-height:50px;flex-wrap:wrap;gap:6px;padding-top:6px;padding-bottom:6px}
+  .brand{gap:8px}
+  .brand-icon{width:28px;height:28px}
+  .brand h1{font-size:13px}
+  .brand small{display:none}
+  .hstatus{gap:8px}
+  .chip{padding:4px 10px;font-size:10px}
+  .clock{font-size:10px}
+  .alarm-btn{padding:4px 8px;font-size:10px}
+  .alarm-btn .alarm-icon{font-size:12px}
+
+  /* --- SIDEBAR becomes bottom sheet --- */
+  .sidebar{
+    border-right:none;
+    border-top:1px solid var(--border);
+    overflow-y:auto;
+    padding:12px;
+    max-height:45vh;
+    order:3; /* push below map */
+  }
+  /* Collapse transitions on mobile */
+  .app.sidebar-collapsed .sidebar{
+    transform:translateY(100%);
+    max-height:0;padding:0 12px;opacity:0;pointer-events:none;overflow:hidden;
+  }
+
+  /* --- SIDEBAR TOGGLE repositioned --- */
+  .sidebar-toggle{
+    position:fixed !important;
+    left:50% !important;
+    top:auto !important;
+    bottom:0 !important;
+    transform:translateX(-50%);
+    width:56px;height:24px;
+    border-radius:10px 10px 0 0;
+    border:1px solid var(--border);
+    border-bottom:none;
+    z-index:1001;
+  }
+  .app.sidebar-collapsed .sidebar-toggle{
+    left:50% !important;
+    bottom:0 !important;
+  }
+
+  /* --- MAP fills remaining space --- */
+  .mapc{position:relative;overflow:hidden;order:2;min-height:200px}
+
+  /* --- Map overlays: smaller --- */
+  .movl{padding:6px 12px;gap:10px;border-radius:8px}
+  .osv{font-size:12px}
+  .osl{font-size:7.5px}
+  .odiv{height:20px}
+  .map-logo{width:50px;height:50px;bottom:10px;right:10px}
+  .map-legend{bottom:10px;left:10px;padding:6px 8px;border-radius:8px}
+  .click-hint{font-size:9px;padding:4px 10px;bottom:10px}
+
+  /* --- DETAIL PANEL becomes full-width overlay --- */
+  .detail{
+    position:fixed;inset:0;top:50px;z-index:1100;
+    border-left:none;border-top:1px solid var(--border);
+    transform:translateY(100%);
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+  }
+  .app.panel-open .detail{transform:translateY(0)}
+
+  /* Detail panel inner adjustments */
+  .d-body{padding:14px}
+  .d-name{font-size:15px}
+  .d-idx-num{font-size:34px}
+  .mini-grid{grid-template-columns:repeat(2,1fr)}
+  .d-badge{padding:10px 12px;gap:10px}
+
+  /* --- Cards & readings compact --- */
+  .card{padding:12px;border-radius:10px}
+  .card-h{margin-bottom:8px}
+  .rval{font-size:18px}
+  .readings-grid{gap:6px}
+  .rbox{padding:10px}
+  .impact-index{font-size:28px}
+  .impact-label{font-size:12px}
+  .impact-desc{font-size:10px}
+  .blist{max-height:160px}
+  .bitem{padding:6px 8px;font-size:11px}
+  .chart-inner{height:160px}
+
+  /* Legend grid: single column on very narrow */
+  .legend-grid{grid-template-columns:1fr}
+}
+
+/* Extra-small phones */
+@media (max-width: 400px) {
+  header{padding:0 8px}
+  .brand h1{font-size:11px}
+  .hstatus{gap:5px}
+  .chip{padding:3px 7px;font-size:9px}
+  .alarm-btn{padding:3px 6px;font-size:9px}
+  .clock{display:none}
+  .sidebar{padding:8px;max-height:40vh}
+  .rval{font-size:16px}
+  .impact-index{font-size:24px}
+}
+
 </style>
 </head>
 <body>
@@ -1021,11 +1139,27 @@ function toggleSidebar() {
   const btn = document.getElementById('sidebarToggle');
   app.classList.toggle('sidebar-collapsed');
   const collapsed = app.classList.contains('sidebar-collapsed');
-  btn.innerHTML = collapsed ? '&#9654;' : '&#9664;';
-  btn.title = collapsed ? 'Show sidebar' : 'Hide sidebar';
+  const mobile = window.innerWidth <= 768;
+  if (mobile) {
+    btn.innerHTML = collapsed ? '&#9650;' : '&#9660;';  // ▲ / ▼
+    btn.title = collapsed ? 'Show readings' : 'Hide readings';
+  } else {
+    btn.innerHTML = collapsed ? '&#9654;' : '&#9664;';  // ▶ / ◀
+    btn.title = collapsed ? 'Show sidebar' : 'Hide sidebar';
+  }
   // Let Leaflet recalculate map size after CSS transition
   setTimeout(function() { if (window.map) map.invalidateSize(); }, 350);
 }
+
+// Update toggle arrow on resize (e.g. device rotation)
+window.addEventListener('resize', function() {
+  const btn = document.getElementById('sidebarToggle');
+  const collapsed = document.querySelector('.app').classList.contains('sidebar-collapsed');
+  const mobile = window.innerWidth <= 768;
+  if (mobile) btn.innerHTML = collapsed ? '&#9650;' : '&#9660;';
+  else btn.innerHTML = collapsed ? '&#9654;' : '&#9664;';
+  if (window.map) setTimeout(function(){ map.invalidateSize(); }, 100);
+});
 
 function toggleAlarm() {
   alarmArmed = !alarmArmed;
@@ -1096,6 +1230,10 @@ setInterval(tick,1000); tick();
 //  INIT
 // ============================================================
 window.onload = async () => {
+  // Set correct sidebar toggle arrow for mobile/desktop
+  var btn = document.getElementById('sidebarToggle');
+  if (window.innerWidth <= 768) btn.innerHTML = '&#9660;';
+
   const dbEl = document.getElementById('dbStatus');
   try {
     const r = await fetch(IMPACT_MATRIX_URL);
