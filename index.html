@@ -6,6 +6,7 @@
 <title>Heat Stress Monitoring Portal — Impact-Based Heat Stress Portal</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 <style>
@@ -60,7 +61,16 @@ header{
 .card-l{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);font-weight:500}
 .badge{font-size:10px;padding:3px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-weight:600}
 .readings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.rbox{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;text-align:center}
+.rbox{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .2s}
+.rbox:hover{background:rgba(255,255,255,.07);border-color:rgba(59,130,246,.3)}
+.rbox.active-metric{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.4)}
+.chart-panel{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0}
+.chart-panel.open{max-height:320px;opacity:1}
+.chart-inner{padding:10px 0 4px;position:relative}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.chart-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);font-weight:500}
+.chart-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px;padding:0 4px;line-height:1}
+.chart-close:hover{color:var(--text)}
 .rval{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700}
 .rlbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-top:4px}
 .impact-box{border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
@@ -200,10 +210,19 @@ header{
         <span class="badge" id="stationTime" style="background:rgba(59,130,246,.15);color:var(--accent)">--</span>
       </div>
       <div class="readings-grid">
-        <div class="rbox"><div class="rval" id="sHI">--</div><div class="rlbl">Heat Index &#176;C</div></div>
-        <div class="rbox"><div class="rval" id="sWBGT">--</div><div class="rlbl">WBGT &#176;C</div></div>
-        <div class="rbox"><div class="rval" id="sTemp">--</div><div class="rlbl">Temperature &#176;C</div></div>
-        <div class="rbox"><div class="rval" id="sHum">--</div><div class="rlbl">Humidity %</div></div>
+        <div class="rbox" onclick="showChart('hi_c','Heat Index','°C','#ef4444')"><div class="rval" id="sHI">--</div><div class="rlbl">Heat Index &#176;C</div></div>
+        <div class="rbox" onclick="showChart('wbgt_c','WBGT','°C','#f97316')"><div class="rval" id="sWBGT">--</div><div class="rlbl">WBGT &#176;C</div></div>
+        <div class="rbox" onclick="showChart('temp_c','Temperature','°C','#3b82f6')"><div class="rval" id="sTemp">--</div><div class="rlbl">Temperature &#176;C</div></div>
+        <div class="rbox" onclick="showChart('rh','Humidity','%','#22c55e')"><div class="rval" id="sHum">--</div><div class="rlbl">Humidity %</div></div>
+      </div>
+      <div class="chart-panel" id="chartPanel">
+        <div class="chart-inner">
+          <div class="chart-header">
+            <span class="chart-title" id="chartTitle">24h Data</span>
+            <button class="chart-close" onclick="closeChart()">&#10005;</button>
+          </div>
+          <canvas id="historyChart" height="180"></canvas>
+        </div>
       </div>
     </div>
 
@@ -793,6 +812,146 @@ async function fetchLive() {
         '<div class="ltxt2">Cannot read rolling data from Google Sheet.<br>Check console (F12) for details.</div>' +
         '<button onclick="fetchLive()" style="margin-top:14px;padding:8px 22px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:13px">\u21BB Retry</button>';
     }
+  }
+}
+
+// ============================================================
+//  24-HOUR HISTORY CHART
+//  Fetches data from Google Sheet and renders a line chart
+//  when user clicks a reading box in the sidebar.
+// ============================================================
+const HISTORY_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLjSLHjtdxXAo8FkPFLPwAUaUz23JiFVgtAHR0ktQ1TxPZHsz_TKkHxm5xMjYHIyUJS-3UWF_OZCpuP49nkOma1kCbUjULYc993tN--Ojw06ioCdsUAgkBU7dWtTImD2z2pYi0zPBlSf2JfPleA13KbYtsq8zgoLgQpEMzZZq0kNxRd9anfW8pYN3n_mhkjHT1mpBDFaZh02GewqGMeEafPQ-h3glorS5aLCKhdEvAjhkXk60NRo8wL8DumH__HC0jqq4dSL1QDanfAQIG84dfdOUIwslEG_S-Q7Yuox&lib=MJ7VVjKgoUVCOIlq3PAAWT8B9idnuYf5E";
+
+let historyCache = null;
+let historyCacheTime = 0;
+let historyChart = null;
+let activeMetric = null;
+
+async function fetchHistory() {
+  const now = Date.now();
+  // Cache for 2 minutes to avoid excessive API calls
+  if (historyCache && (now - historyCacheTime) < 120000) return historyCache;
+  try {
+    const res = await fetch(HISTORY_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    // Handle both array and {data:[]} formats
+    const arr = Array.isArray(data) ? data : (data.data || data.readings || []);
+    historyCache = arr;
+    historyCacheTime = now;
+    return arr;
+  } catch (e) {
+    console.error('[HeatGuard] History fetch error:', e.message);
+    return historyCache || [];
+  }
+}
+
+async function showChart(field, label, unit, color) {
+  // Highlight active box
+  document.querySelectorAll('.rbox').forEach(b => b.classList.remove('active-metric'));
+  event.currentTarget.classList.add('active-metric');
+
+  const panel = document.getElementById('chartPanel');
+  document.getElementById('chartTitle').textContent = label + ' — Last 24 Hours';
+  panel.classList.add('open');
+
+  // If same metric clicked, toggle off
+  if (activeMetric === field) {
+    closeChart();
+    return;
+  }
+  activeMetric = field;
+
+  const pool = await fetchHistory();
+  if (!pool.length) {
+    document.getElementById('chartTitle').textContent = 'No data available yet';
+    return;
+  }
+
+  // Sort by timestamp and extract data
+  const sorted = [...pool].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  const labels = sorted.map(r => {
+    const d = new Date(r.timestamp);
+    return d.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit', hour12:true });
+  });
+
+  const values = sorted.map(r => {
+    const v = parseFloat(r[field]);
+    return isNaN(v) ? null : v;
+  });
+
+  // Destroy previous chart
+  if (historyChart) {
+    historyChart.destroy();
+    historyChart = null;
+  }
+
+  const ctx = document.getElementById('historyChart').getContext('2d');
+  historyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: label + ' (' + unit + ')',
+        data: values,
+        borderColor: color,
+        backgroundColor: color + '22',
+        fill: true,
+        tension: 0.3,
+        pointRadius: values.length > 50 ? 0 : 2,
+        pointHoverRadius: 4,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(17,24,39,.92)',
+          titleColor: '#e8ecf4',
+          bodyColor: '#e8ecf4',
+          borderColor: '#2a3550',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            label: function(ctx) { return label + ': ' + ctx.parsed.y.toFixed(1) + unit; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#5a6a85',
+            font: { size: 9, family: 'JetBrains Mono' },
+            maxTicksLimit: 8,
+            maxRotation: 0
+          },
+          grid: { color: 'rgba(255,255,255,.05)' }
+        },
+        y: {
+          ticks: {
+            color: '#5a6a85',
+            font: { size: 9, family: 'JetBrains Mono' },
+            callback: function(v) { return v.toFixed(1); }
+          },
+          grid: { color: 'rgba(255,255,255,.05)' }
+        }
+      },
+      interaction: { mode: 'index', intersect: false }
+    }
+  });
+}
+
+function closeChart() {
+  activeMetric = null;
+  document.getElementById('chartPanel').classList.remove('open');
+  document.querySelectorAll('.rbox').forEach(b => b.classList.remove('active-metric'));
+  if (historyChart) {
+    historyChart.destroy();
+    historyChart = null;
   }
 }
 
