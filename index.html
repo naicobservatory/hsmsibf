@@ -64,9 +64,9 @@ header{
 .rbox{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all .2s}
 .rbox:hover{background:rgba(255,255,255,.07);border-color:rgba(59,130,246,.3)}
 .rbox.active-metric{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.4)}
-.chart-panel{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0}
-.chart-panel.open{max-height:320px;opacity:1}
-.chart-inner{padding:10px 0 4px;position:relative}
+.chart-panel{display:none;overflow:hidden}
+.chart-panel.open{display:block}
+.chart-inner{padding:10px 0 4px;position:relative;height:200px}
 .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .chart-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);font-weight:500}
 .chart-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px;padding:0 4px;line-height:1}
@@ -221,7 +221,7 @@ header{
             <span class="chart-title" id="chartTitle">24h Data</span>
             <button class="chart-close" onclick="closeChart()">&#10005;</button>
           </div>
-          <canvas id="historyChart" height="180"></canvas>
+          <canvas id="historyChart" style="width:100%;height:160px"></canvas>
         </div>
       </div>
     </div>
@@ -881,13 +881,20 @@ async function showChart(field, label, unit, color) {
     return isNaN(v) ? null : v;
   });
 
-  // Destroy previous chart
+  // Destroy previous chart and reset canvas
   if (historyChart) {
     historyChart.destroy();
     historyChart = null;
   }
+  const canvasWrap = document.getElementById('historyChart').parentNode;
+  const oldCanvas = document.getElementById('historyChart');
+  oldCanvas.remove();
+  const newCanvas = document.createElement('canvas');
+  newCanvas.id = 'historyChart';
+  newCanvas.style.cssText = 'width:100%;height:160px';
+  canvasWrap.appendChild(newCanvas);
 
-  const ctx = document.getElementById('historyChart').getContext('2d');
+  const ctx = newCanvas.getContext('2d');
   historyChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -907,6 +914,7 @@ async function showChart(field, label, unit, color) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
       plugins: {
         legend: { display: false },
         tooltip: {
