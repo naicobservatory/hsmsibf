@@ -411,9 +411,39 @@ const IMPACTS = {
 const MOD_MEAN = 0.436;
 
 function tierScore(val, thresholds) {
-  for (let i = 0; i < thresholds.length; i++)
-    if (val < thresholds[i]) return i + 1;
-  return 4;
+  // Interpolated scoring within each PAGASA/ISO tier range:
+  //   Below thresholds[0]: score 1.0 – 1.99 (Tier 1: Caution)
+  //   thresholds[0]–[1]:   score 2.0 – 2.99 (Tier 2: Extreme Caution)
+  //   thresholds[1]–[2]:   score 3.0 – 3.99 (Tier 3: Danger)
+  //   Above thresholds[2]: score 4.0         (Tier 4: Extreme Danger)
+  //
+  // Example with HI thresholds [27,33,42]:
+  //   HI 24°C → ~1.5   (midway through Caution)
+  //   HI 27°C → 2.0    (enters Extreme Caution)
+  //   HI 30°C → 2.5    (midway through Extreme Caution)
+  //   HI 33°C → 3.0    (enters Danger)
+  //   HI 37.5°C → 3.5  (midway through Danger)
+  //   HI 42°C → 4.0    (Extreme Danger)
+  var t = thresholds;
+
+  // Tier 1: below first threshold
+  if (val < t[0]) {
+    var span = t[1] - t[0];  // use tier-2 width as reference for tier 1
+    var frac = Math.max(0, (val - (t[0] - span)) / span);
+    return 1.0 + Math.min(frac, 0.99);
+  }
+  // Tier 2: between thresholds[0] and [1]
+  if (val < t[1]) {
+    var frac = (val - t[0]) / (t[1] - t[0]);
+    return 2.0 + frac * 0.99;
+  }
+  // Tier 3: between thresholds[1] and [2]
+  if (val < t[2]) {
+    var frac = (val - t[1]) / (t[2] - t[1]);
+    return 3.0 + frac * 0.99;
+  }
+  // Tier 4: above last threshold
+  return 4.0;
 }
 function roundHalf(n) { return Math.min(4, Math.max(1, Math.round(n * 2) / 2)); }
 
