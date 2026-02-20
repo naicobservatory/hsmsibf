@@ -471,8 +471,8 @@ function computeIndex(hi, wbgt, brgyName) {
   const imp    = MATRIX?.impacts      || IMPACTS;
   const hiT    = MATRIX?.hi_thresholds  || [27, 33, 42];
   const wbgtT  = MATRIX?.wbgt_thresholds || [25, 28, 32];
-  const hiS    = tierScore(hi,   hiT);
-  const wbgtS  = tierScore(wbgt, wbgtT);
+  const hiS    = Math.round(tierScore(hi,   hiT) * 100) / 100;
+  const wbgtS  = Math.round(tierScore(wbgt, wbgtT) * 100) / 100;
   const comb   = Math.max(hiS, wbgtS) * 0.75 + Math.min(hiS, wbgtS) * 0.25;
   const bd     = MATRIX?.barangays?.[brgyName];
   const rm     = rawMod(bd);
