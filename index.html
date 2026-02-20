@@ -520,7 +520,7 @@ function renderMap() {
     },
     onEachFeature: (f, ly) => {
       const name = f.properties._dn;
-      ly.on('mouseover', () => { ly.setStyle({weight:3,fillOpacity:0.72}); ly.bringToFront(); });
+      ly.on('mouseover', () => { ly.setStyle({weight:3, color:'#ffffff'}); ly.bringToFront(); });
       ly.on('mouseout',  () => { if (name !== activeB) geoL.resetStyle(ly); });
       ly.on('click',     () => selectBarangay(name));
     }
@@ -608,7 +608,7 @@ function selectBarangay(name) {
     geoL.eachLayer(ly => {
       if (ly.feature?.properties._dn === name) {
         map.fitBounds(ly.getBounds(), {padding:[30,30]});
-        ly.setStyle({weight:3.5, fillOpacity:0.80});
+        ly.setStyle({weight:3.5, color:'#ffffff'});
         ly.bringToFront();
       }
     });
