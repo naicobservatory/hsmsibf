@@ -37,7 +37,7 @@ header{
   display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:1000;
 }
 .brand{display:flex;align-items:center;gap:14px}
-.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--orange),var(--red));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand-icon{width:36px;height:36px;border-radius:10px;object-fit:contain}
 .brand h1{font-family:'Playfair Display',serif;font-weight:900;font-size:17px;letter-spacing:-.5px;background:linear-gradient(135deg,#fff,#8899b4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .brand small{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
 .hstatus{display:flex;align-items:center;gap:20px}
@@ -45,6 +45,13 @@ header{
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
 .clock{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.alarm-btn{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);padding:5px 12px;border-radius:20px;cursor:pointer;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;transition:all .2s}
+.alarm-btn:hover{background:rgba(255,255,255,.08)}
+.alarm-btn.armed{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:var(--red)}
+.alarm-btn .alarm-icon{font-size:14px}
+.alarm-btn .alarm-label{white-space:nowrap}
+@keyframes alarm-flash{0%,100%{opacity:1}50%{opacity:.3}}
+.alarm-active{animation:alarm-flash .6s ease-in-out infinite}
 
 /* === LEFT SIDEBAR === */
 .sidebar{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
@@ -169,10 +176,14 @@ header{
   <!-- HEADER -->
   <header>
     <div class="brand">
-      <div class="brand-icon">&#127777;</div>
+      <img src="hoticon.png" alt="Heat Icon" class="brand-icon">
       <div><h1>Heat Stress Monitoring Portal</h1><small>Impact-Based Heat Stress Portal</small></div>
     </div>
     <div class="hstatus">
+      <button class="alarm-btn" id="alarmBtn" onclick="toggleAlarm()" title="Toggle heat alarm">
+        <span class="alarm-icon" id="alarmIcon">&#128276;</span>
+        <span class="alarm-label" id="alarmLabel">Alarm Off</span>
+      </button>
       <div class="chip"><span class="live-dot" id="cDot"></span><span id="cStat">Initializing&#8230;</span></div>
       <div class="clock" id="clock"></div>
     </div>
@@ -509,6 +520,9 @@ function updateSidebar(hi, wbgt, temp, hum) {
   document.getElementById('miBadge').style.background = wi.bg;
   document.getElementById('miBadge').style.color       = wi.color;
 
+  // ── Trigger alarm if armed and threshold exceeded ──
+  triggerAlarm(worst.index, wi.label);
+
   document.getElementById('bCount').textContent = S.length + ' Brgy';
   const sorted = Object.entries(BS).sort((a,b) => b[1].index - a[1].index || a[0].localeCompare(b[0]));
   document.getElementById('bList').innerHTML = sorted.map(([n,d]) => {
@@ -779,6 +793,72 @@ async function fetchLive() {
         '<div class="ltxt2">Cannot read rolling data from Google Sheet.<br>Check console (F12) for details.</div>' +
         '<button onclick="fetchLive()" style="margin-top:14px;padding:8px 22px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:13px">\u21BB Retry</button>';
     }
+  }
+}
+
+// ============================================================
+//  ALARM SYSTEM
+//  Plays warning-signal.mp3 when worst municipal index
+//  reaches the alarm threshold. User can toggle on/off.
+// ============================================================
+const ALARM_THRESHOLD = 3.0;   // trigger at High Risk (3.0) and above
+let alarmArmed    = false;
+let alarmPlaying  = false;
+let alarmAudio    = null;
+
+function toggleAlarm() {
+  alarmArmed = !alarmArmed;
+  const btn   = document.getElementById('alarmBtn');
+  const icon  = document.getElementById('alarmIcon');
+  const label = document.getElementById('alarmLabel');
+
+  if (alarmArmed) {
+    btn.classList.add('armed');
+    icon.textContent  = '\uD83D\uDD14';   // 🔔
+    label.textContent = 'Alarm On';
+    // Pre-create audio so it's ready (user gesture already happened via click)
+    if (!alarmAudio) {
+      alarmAudio = new Audio('warning-signal.mp3');
+      alarmAudio.loop = true;
+    }
+  } else {
+    btn.classList.remove('armed');
+    btn.classList.remove('alarm-active');
+    icon.textContent  = '\uD83D\uDD15';   // 🔕
+    label.textContent = 'Alarm Off';
+    stopAlarm();
+  }
+}
+
+function triggerAlarm(worstIndex, worstLabel) {
+  if (!alarmArmed || alarmPlaying) return;
+  if (worstIndex < ALARM_THRESHOLD) {
+    stopAlarm();
+    return;
+  }
+  alarmPlaying = true;
+  document.getElementById('alarmBtn').classList.add('alarm-active');
+  document.getElementById('alarmLabel').textContent = '\u26A0 ' + worstLabel;
+
+  if (alarmAudio) {
+    alarmAudio.currentTime = 0;
+    alarmAudio.play().catch(e => console.warn('[Alarm] Audio play blocked:', e.message));
+  }
+
+  // Auto-stop after 15 seconds so it doesn't play forever
+  setTimeout(() => { stopAlarm(); }, 15000);
+}
+
+function stopAlarm() {
+  alarmPlaying = false;
+  if (alarmAudio) {
+    alarmAudio.pause();
+    alarmAudio.currentTime = 0;
+  }
+  const btn = document.getElementById('alarmBtn');
+  btn.classList.remove('alarm-active');
+  if (alarmArmed) {
+    document.getElementById('alarmLabel').textContent = 'Alarm On';
   }
 }
 
