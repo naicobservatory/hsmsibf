@@ -55,7 +55,13 @@ header{
 .alarm-active{animation:alarm-flash .6s ease-in-out infinite}
 
 /* === LEFT SIDEBAR === */
-.sidebar{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;position:relative;transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .25s ease}
+.app.sidebar-collapsed .sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;overflow:hidden}
+.app.sidebar-collapsed{grid-template-columns:0px 1fr 0px}
+.app.sidebar-collapsed.panel-open{grid-template-columns:0px 1fr 380px}
+.sidebar-toggle{position:fixed;left:400px;top:76px;z-index:1001;width:28px;height:48px;background:var(--bg2);border:1px solid var(--border);border-left:none;border-radius:0 10px 10px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;transition:all .32s cubic-bezier(.4,0,.2,1);padding:0}
+.sidebar-toggle:hover{background:var(--card);color:var(--text)}
+.app.sidebar-collapsed .sidebar-toggle{left:0px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
 .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .card-l{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);font-weight:500}
@@ -198,6 +204,9 @@ header{
       <div class="clock" id="clock"></div>
     </div>
   </header>
+
+  <!-- SIDEBAR TOGGLE -->
+  <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">&#9664;</button>
 
   <!-- LEFT SIDEBAR -->
   <aside class="sidebar">
@@ -1002,6 +1011,20 @@ const ALARM_THRESHOLD = 3.0;   // trigger at High Risk (3.0) and above
 let alarmArmed    = false;
 let alarmPlaying  = false;
 let alarmAudio    = null;
+
+// ============================================================
+//  SIDEBAR COLLAPSE / EXPAND
+// ============================================================
+function toggleSidebar() {
+  const app = document.querySelector('.app');
+  const btn = document.getElementById('sidebarToggle');
+  app.classList.toggle('sidebar-collapsed');
+  const collapsed = app.classList.contains('sidebar-collapsed');
+  btn.innerHTML = collapsed ? '&#9654;' : '&#9664;';
+  btn.title = collapsed ? 'Show sidebar' : 'Hide sidebar';
+  // Let Leaflet recalculate map size after CSS transition
+  setTimeout(function() { if (window.map) map.invalidateSize(); }, 350);
+}
 
 function toggleAlarm() {
   alarmArmed = !alarmArmed;
