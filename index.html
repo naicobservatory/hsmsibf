@@ -52,11 +52,11 @@
 .theme-toggle:hover{background:var(--subtle-hover);color:var(--text)}
 .theme-toggle svg{width:18px;height:18px}
 .theme-toggle__within{transition:transform .45s cubic-bezier(.4,0,.2,1)}
-[data-theme="light"] .theme-toggle__within{transform:rotate(50deg)}
-.theme-toggle__within__inner{transition:transform .45s cubic-bezier(.4,0,.2,1)}
-[data-theme="light"] .theme-toggle__within__inner{transform:scale(0)}
+[data-theme="dark"] .theme-toggle__within{transform:rotate(50deg)}
+.theme-toggle__within__inner{transition:transform .45s cubic-bezier(.4,0,.2,1);transform-origin:center}
+[data-theme="dark"] .theme-toggle__within__inner{transform:scale(0)}
 .theme-toggle__within__circle{transition:transform .45s cubic-bezier(.4,0,.2,1);transform-origin:center}
-[data-theme="light"] .theme-toggle__within__circle{transform:scale(1.4)}
+[data-theme="dark"] .theme-toggle__within__circle{transform:scale(1.4)}
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh}
