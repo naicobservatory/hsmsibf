@@ -49,7 +49,7 @@ header{
 .alarm-btn{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);padding:5px 12px;border-radius:20px;cursor:pointer;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;transition:all .2s}
 .alarm-btn:hover{background:rgba(255,255,255,.08)}
 .alarm-btn.armed{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:var(--red)}
-.alarm-btn .alarm-icon{font-size:14px}
+.alarm-btn .alarm-icon{width:18px;height:18px;vertical-align:middle}
 .alarm-btn .alarm-label{white-space:nowrap}
 @keyframes alarm-flash{0%,100%{opacity:1}50%{opacity:.3}}
 .alarm-active{animation:alarm-flash .6s ease-in-out infinite}
@@ -213,7 +213,7 @@ header{
   .chip{padding:4px 10px;font-size:10px}
   .clock{font-size:10px}
   .alarm-btn{padding:4px 8px;font-size:10px}
-  .alarm-btn .alarm-icon{font-size:12px}
+  .alarm-btn .alarm-icon{width:14px;height:14px}
 
   /* --- SIDEBAR becomes bottom sheet --- */
   .sidebar{
@@ -319,7 +319,7 @@ header{
     </div>
     <div class="hstatus">
       <button class="alarm-btn" id="alarmBtn" onclick="toggleAlarm()" title="Toggle heat alarm">
-        <span class="alarm-icon" id="alarmIcon">&#128276;</span>
+        <img class="alarm-icon" id="alarmIcon" src="bell_icon.png" alt="alarm bell" style="width:18px;height:18px;filter:grayscale(1) brightness(1.5)">
         <span class="alarm-label" id="alarmLabel">Alarm Off</span>
       </button>
       <div class="chip"><span class="live-dot" id="cDot"></span><span id="cStat">Initializing&#8230;</span></div>
@@ -1224,7 +1224,7 @@ function closeChart() {
 //  Plays warning-signal.mp3 when worst municipal index
 //  reaches the alarm threshold. User can toggle on/off.
 // ============================================================
-const ALARM_THRESHOLD = 4.0;   // trigger at High Risk (3.0) and above
+const ALARM_THRESHOLD = 3.0;   // trigger at High Risk (3.0) and above
 let alarmArmed    = false;
 let alarmPlaying  = false;
 let alarmAudio    = null;
@@ -1267,7 +1267,7 @@ function toggleAlarm() {
 
   if (alarmArmed) {
     btn.classList.add('armed');
-    icon.textContent  = '\uD83D\uDD14';   // 🔔
+    icon.style.filter  = 'none';   // full color when armed
     label.textContent = 'Alarm On';
     // Pre-create audio so it's ready (user gesture already happened via click)
     if (!alarmAudio) {
@@ -1277,7 +1277,7 @@ function toggleAlarm() {
   } else {
     btn.classList.remove('armed');
     btn.classList.remove('alarm-active');
-    icon.textContent  = '\uD83D\uDD15';   // 🔕
+    icon.style.filter  = 'grayscale(1) brightness(1.5)';   // grayed out when off
     label.textContent = 'Alarm Off';
     stopAlarm();
   }
