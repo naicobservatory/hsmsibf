@@ -682,7 +682,7 @@ function rawMod(bd) {
 }
 
 function computeIndex(hi, wbgt, brgyName) {
-  const imp    = MATRIX?.impacts      || IMPACTS;
+  const imp    = IMPACTS;
   const hiT    = MATRIX?.hi_thresholds  || [27, 33, 42, 52];
   const wbgtT  = MATRIX?.wbgt_thresholds || [25, 28, 32, 35];
   const hiS    = Math.round(tierScore(hi,   hiT) * 100) / 100;
@@ -1224,7 +1224,7 @@ function closeChart() {
 //  Plays warning-signal.mp3 when worst municipal index
 //  reaches the alarm threshold. User can toggle on/off.
 // ============================================================
-const ALARM_THRESHOLD = 4.5;   // trigger at High Risk (4.5) and above
+const ALARM_THRESHOLD = 3.0;   // trigger at High Risk (3.0) and above
 let alarmArmed    = false;
 let alarmPlaying  = false;
 let alarmAudio    = null;
@@ -1337,7 +1337,8 @@ window.onload = async () => {
     const r = await fetch(IMPACT_MATRIX_URL);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     MATRIX = await r.json();
-    if (MATRIX.impacts) Object.assign(IMPACTS, MATRIX.impacts);
+    // IMPACTS defined in HTML is authoritative for colors/labels/descriptions
+    // External JSON impacts are ignored — update IMPACTS in HTML source instead
     const n = Object.keys(MATRIX.barangays || {}).length;
     dbEl.textContent = '\u2705 Impact matrix loaded \u2014 ' + n + ' barangay profiles active';
     dbEl.className   = 'db-status ok';
