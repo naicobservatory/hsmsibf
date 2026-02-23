@@ -519,6 +519,8 @@ let BS      = {};       // { barangayName: { index, impact, hiScore, … } }
 let geoData = null;
 let geoL    = null;
 let activeB = null;     // currently selected barangay
+let hoveredLayer = null; // track hovered layer to prevent stale highlights
+let layerMap = {};       // barangay name → Leaflet layer lookup
 
 // ============================================================
 //  BUILT-IN IMPACT DESCRIPTIONS  (overridden by JSON on load)
@@ -726,6 +728,8 @@ const stationMarker2 = L.marker([14.322429755684219, 120.7718108314786], { icon:
 
 function renderMap() {
   if (geoL) map.removeLayer(geoL);
+  hoveredLayer = null;
+  layerMap = {};
   geoL = L.geoJSON(geoData, {
     style: f => {
       const d = BS[f.properties._dn];
@@ -734,12 +738,38 @@ function renderMap() {
     },
     onEachFeature: (f, ly) => {
       const name = f.properties._dn;
-      ly.on('mouseover', () => { ly.setStyle({weight:3, color:'#ffffff'}); ly.bringToFront(); });
-      ly.on('mouseout',  () => { if (name !== activeB) geoL.resetStyle(ly); });
+      ly.on('mouseover', () => {
+        // Reset previously hovered layer to prevent stale highlights
+        if (hoveredLayer && hoveredLayer !== ly && hoveredLayer._dn !== activeB) {
+          geoL.resetStyle(hoveredLayer);
+        }
+        hoveredLayer = ly;
+        ly._dn = name;
+        ly.setStyle({weight:3, color:'#ffffff'});
+        ly.bringToFront();
+        // Keep active barangay on top
+        if (activeB && layerMap[activeB] && layerMap[activeB] !== ly) {
+          layerMap[activeB].bringToFront();
+        }
+      });
+      ly.on('mouseout',  () => {
+        if (name !== activeB) geoL.resetStyle(ly);
+        if (hoveredLayer === ly) hoveredLayer = null;
+      });
       ly.on('click',     () => selectBarangay(name));
+      layerMap[name] = ly;
     }
   }).addTo(map);
   if (geoL.getBounds().isValid()) map.fitBounds(geoL.getBounds());
+  // Clear stale hover when mouse leaves the map container
+  map.off('mouseout', clearHover);
+  map.on('mouseout', clearHover);
+}
+function clearHover() {
+  if (hoveredLayer && hoveredLayer._dn !== activeB) {
+    geoL.resetStyle(hoveredLayer);
+  }
+  hoveredLayer = null;
 }
 
 // ============================================================
@@ -1224,7 +1254,7 @@ function closeChart() {
 //  Plays warning-signal.mp3 when worst municipal index
 //  reaches the alarm threshold. User can toggle on/off.
 // ============================================================
-const ALARM_THRESHOLD = 4.0;   // trigger at High Risk (3.0) and above
+const ALARM_THRESHOLD = 4.0;   // trigger at Dangerous (4.0) and above
 let alarmArmed    = false;
 let alarmPlaying  = false;
 let alarmAudio    = null;
