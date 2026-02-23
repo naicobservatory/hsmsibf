@@ -47,9 +47,17 @@
 [data-theme="light"] .leaflet-bar a{background:var(--card)!important;color:var(--text)!important;border-color:var(--border)!important}
 [data-theme="light"] .leaflet-bar a:hover{background:var(--subtle-hover)!important}
 
-/* Theme toggle button */
-.theme-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--card);border:1px solid var(--border);border-radius:50%;cursor:pointer;font-size:15px;color:var(--muted);transition:all .2s;padding:0;line-height:1}
-.theme-btn:hover{background:var(--subtle-hover);color:var(--text)}
+/* Theme toggle — Classic (theme-toggles.com) */
+.theme-toggle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--card);border:1px solid var(--border);border-radius:50%;cursor:pointer;color:var(--muted);transition:all .2s;padding:0}
+.theme-toggle:hover{background:var(--subtle-hover);color:var(--text)}
+.theme-toggle svg{width:18px;height:18px}
+.theme-toggle__classic{transition:transform .45s cubic-bezier(.4,0,.2,1)}
+[data-theme="light"] .theme-toggle__classic{transform:rotate(45deg)}
+.theme-toggle__classic g>circle{transition:transform .45s cubic-bezier(.4,0,.2,1)}
+[data-theme="light"] .theme-toggle__classic g>circle{transform:scale(1)}
+.theme-toggle__classic clipPath path{transition:d .45s cubic-bezier(.4,0,.2,1)}
+[data-theme="light"] .theme-toggle__classic clipPath path{d:path("M0-5h30a1 1 0 0 0 9 13v24H0Z")}
+[data-theme="dark"] .theme-toggle__classic clipPath path{d:path("M0-5h26a1 1 0 0 1-2.5 9.5v19.5H0Z")}
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh}
@@ -245,7 +253,8 @@ header{
   .chip{padding:4px 10px;font-size:10px}
   .clock{font-size:10px}
   .alarm-btn{padding:4px 8px;font-size:10px}
-  .theme-btn{width:28px;height:28px;font-size:13px}
+  .theme-toggle{width:28px;height:28px}
+  .theme-toggle svg{width:15px;height:15px}
   .alarm-btn .alarm-icon{width:14px;height:14px}
 
   /* --- SIDEBAR becomes bottom sheet --- */
@@ -333,7 +342,8 @@ header{
   .hstatus{gap:5px}
   .chip{padding:3px 7px;font-size:9px}
   .alarm-btn{padding:3px 6px;font-size:9px}
-  .theme-btn{width:24px;height:24px;font-size:11px}
+  .theme-toggle{width:24px;height:24px}
+  .theme-toggle svg{width:13px;height:13px}
   .clock{display:none}
   .sidebar{padding:8px;max-height:40vh}
   .rval{font-size:16px}
@@ -352,7 +362,20 @@ header{
       <div><h1>Heat Stress Monitoring Portal</h1><small>Impact-Based Heat Stress Portal</small></div>
     </div>
     <div class="hstatus">
-      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark theme">&#9790;</button>
+      <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" type="button" title="Toggle theme" aria-label="Toggle theme">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="1em" height="1em" fill="currentColor" stroke-linecap="round" class="theme-toggle__classic" viewBox="0 0 32 32">
+          <clipPath id="theme-toggle__classic__cutout"><path d="M0-5h30a1 1 0 0 0 9 13v24H0Z"/></clipPath>
+          <g clip-path="url(#theme-toggle__classic__cutout)">
+            <circle cx="16" cy="16" r="9.34"/>
+            <g stroke="currentColor" stroke-width="1.5">
+              <path d="M16 5.5v-4"/><path d="M16 30.5v-4"/>
+              <path d="M1.5 16h4"/><path d="M26.5 16h4"/>
+              <path d="m23.4 8.6 2.8-2.8"/><path d="m5.7 26.3 2.9-2.9"/>
+              <path d="m5.8 5.8 2.8 2.8"/><path d="m23.4 23.4 2.9 2.9"/>
+            </g>
+          </g>
+        </svg>
+      </button>
       <button class="alarm-btn" id="alarmBtn" onclick="toggleAlarm()" title="Toggle heat alarm">
         <img class="alarm-icon" id="alarmIcon" src="bell_icon.png" alt="alarm bell" style="width:18px;height:18px;filter:grayscale(1) brightness(1.5)">
         <span class="alarm-label" id="alarmLabel">Alarm Off</span>
@@ -1333,10 +1356,6 @@ function applyTheme(theme) {
   currentTheme = theme;
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('heatguard-theme', theme);
-
-  // Update toggle button icon: ☀ for dark (click to go light), ☾ for light (click to go dark)
-  const btn = document.getElementById('themeBtn');
-  if (btn) btn.innerHTML = theme === 'dark' ? '&#9790;' : '&#9728;';
 
   // Switch map basemap if on default dark/light tiles
   if (typeof map !== 'undefined' && typeof dark !== 'undefined' && typeof grey !== 'undefined') {
