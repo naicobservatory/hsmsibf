@@ -777,6 +777,8 @@ const stationMarker2 = L.marker([14.322429755684219, 120.7718108314786], { icon:
   .addTo(map)
   .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>Naic DRRMO AWS</b><br><span style="font-size:11px;color:#666">14.3224°N, 120.7718°E</span></div>');
 
+let mapFirstRender = true;
+
 function renderMap() {
   if (geoL) map.removeLayer(geoL);
   hoveredLayer = null;
@@ -811,7 +813,19 @@ function renderMap() {
       layerMap[name] = ly;
     }
   }).addTo(map);
-  if (geoL.getBounds().isValid()) map.fitBounds(geoL.getBounds());
+
+  // Only fit bounds on the very first render — preserve user zoom/pan on updates
+  if (mapFirstRender && geoL.getBounds().isValid()) {
+    map.fitBounds(geoL.getBounds());
+    mapFirstRender = false;
+  }
+
+  // Re-apply active barangay highlight if one is selected
+  if (activeB && layerMap[activeB]) {
+    layerMap[activeB].setStyle({weight:3.5, color:'#ffffff'});
+    layerMap[activeB].bringToFront();
+  }
+
   // Clear stale hover when mouse leaves the map container
   map.off('mouseout', clearHover);
   map.on('mouseout', clearHover);
@@ -1492,17 +1506,14 @@ window.onload = async () => {
 };
 
 // ============================================================
-//  CLOCK-ALIGNED 1-MINUTE SCHEDULER
-//  Fires at the top of every minute (:00, :01, :02, ...)
-//  The 60-min sliding window shifts forward each minute,
-//  so the displayed average is always fresh.
+//  CLOCK-ALIGNED 5-MINUTE SCHEDULER
+//  Fires at :00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55
+//  Each fetch computes a sliding 60-min rolling average.
 // ============================================================
 function scheduleFetch() {
-  // Fire immediately so the map updates as soon as GeoJSON is loaded
   fetchLive();
 
-  // Then fire again at every 1-minute clock boundary
-  const INTERVAL    = 60 * 1000;  // 1 minute
+  const INTERVAL    = 5 * 60 * 1000;  // 5 minutes
   const now         = Date.now();
   const msUntilNext = INTERVAL - (now % INTERVAL);
 
