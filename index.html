@@ -26,7 +26,7 @@
 }
 [data-theme="light"] {
   --bg:#f0f2f5; --bg2:#ffffff; --card:#f8f9fb; --border:#d5dbe5;
-  --text:#1a1f2e; --muted:#5a657a; --dim:#8892a5; --accent:#2563eb;
+  --text:#1a1f2e; --muted:#4a5568; --dim:#6b7a90; --accent:#2563eb;
   --green:#16a34a; --green-bg:rgba(22,163,74,.10);
   --yellow:#ca8a04; --yellow-bg:rgba(202,138,4,.10);
   --orange:#ea580c; --orange-bg:rgba(234,88,12,.10);
@@ -632,6 +632,21 @@ const IMPACTS_CEB = {
 // ============================================================
 let currentLang = 'en';
 
+// ── Light-theme–safe text color mapping ─────────────────────────
+// Impact fill colors like #ffff00 are invisible as text on white.
+// This helper returns a darker readable version when in light mode.
+const LIGHT_TEXT_MAP = {
+  '#7bff7b':'#1a8a1a', '#00ff00':'#1a8a1a',
+  '#ffff7e':'#8a7a00', '#ffff00':'#8a7a00',
+  '#ffc876':'#b06800', '#ff9900':'#b06800',
+  '#ff0000':'#cc0000', '#cc0000':'#990000',
+  '#ff00ff':'#aa00aa'
+};
+function safeTextColor(color) {
+  if (document.documentElement.getAttribute('data-theme') !== 'light') return color;
+  return LIGHT_TEXT_MAP[(color || '').toLowerCase()] || color;
+}
+
 function switchLang(lang) {
   currentLang = lang;
   // Update toggle button styles
@@ -874,20 +889,20 @@ function updateSidebar(hi, wbgt, temp, hum) {
   const worst = S.reduce((w,b) => b.index > w.index ? b : w, S[0]);
   const wi = worst.impact;
   document.getElementById('oIdx').textContent  = worst.index.toFixed(1);
-  document.getElementById('oIdx').style.color  = wi.color;
+  document.getElementById('oIdx').style.color  = safeTextColor(wi.color);
 
   const miBox = document.getElementById('miBox');
   miBox.style.background  = wi.bg;
   miBox.style.borderColor = wi.color + '55';
   document.getElementById('miIndex').textContent = worst.index.toFixed(1);
-  document.getElementById('miIndex').style.color = wi.color;
+  document.getElementById('miIndex').style.color = safeTextColor(wi.color);
   var locWi = getLocalizedImpact(worst.key);
   document.getElementById('miLabel').textContent = locWi.label;
-  document.getElementById('miLabel').style.color = wi.color;
+  document.getElementById('miLabel').style.color = safeTextColor(wi.color);
   document.getElementById('miDesc').textContent  = locWi.description;
   document.getElementById('miBadge').textContent  = 'IDX ' + worst.index.toFixed(1);
   document.getElementById('miBadge').style.background = wi.bg;
-  document.getElementById('miBadge').style.color       = wi.color;
+  document.getElementById('miBadge').style.color       = safeTextColor(wi.color);
 
   // ── Trigger alarm if armed and threshold exceeded ──
   triggerAlarm(worst.index, wi.label);
@@ -901,7 +916,7 @@ function updateSidebar(hi, wbgt, temp, hum) {
     const sid = 'bi_' + n.replace(/[^a-zA-Z0-9]/g,'_');
     return `<div class="bitem${act}" id="${sid}" onclick="selectBarangay('${n.replace(/'/g,"\\'")}')">
       <div class="bname"><span class="bdot" style="background:${d.impact.color}"></span><span>${n}</span></div>
-      ${popTxt}<span class="bval" style="color:${d.impact.color}">${d.index.toFixed(1)} &middot; ${d.impact.label}</span>
+      ${popTxt}<span class="bval" style="color:${safeTextColor(d.impact.color)}">${d.index.toFixed(1)} &middot; ${d.impact.label}</span>
     </div>`;
   }).join('');
 }
@@ -966,10 +981,10 @@ function fillPanel(name) {
   badge.style.background  = imp.bg;
   badge.style.borderColor = col + '66';
   document.getElementById('dIdxNum').textContent   = d.index.toFixed(1);
-  document.getElementById('dIdxNum').style.color   = col;
+  document.getElementById('dIdxNum').style.color   = safeTextColor(col);
   var locImp = getLocalizedImpact(d.key);
   document.getElementById('dIdxLabel').textContent = locImp.label;
-  document.getElementById('dIdxLabel').style.color = col;
+  document.getElementById('dIdxLabel').style.color = safeTextColor(col);
   document.getElementById('dLandUse').textContent  = vul?._land_use || '';
 
   // --- Impact card ---
@@ -980,22 +995,25 @@ function fillPanel(name) {
 
   // --- Station readings ---
   document.getElementById('dHI').textContent   = d.heatIndex;
-  document.getElementById('dHI').style.color   = col;
+  document.getElementById('dHI').style.color   = safeTextColor(col);
   document.getElementById('dWBGT').textContent = d.wbgt;
-  document.getElementById('dWBGT').style.color = col;
+  document.getElementById('dWBGT').style.color = safeTextColor(col);
   document.getElementById('dTemp').textContent = d.temperature;
   document.getElementById('dHum').textContent  = d.humidity + '%';
 
   // --- Calculation breakdown ---
   const cm    = d.centeredMod ?? 0;
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   const cSign = cm >= 0 ? '+' : '';
-  const cCol  = cm > 0.05 ? '#f97316' : cm < -0.05 ? '#22c55e' : '#8899b4';
+  const calcDim = isLight ? '#5a657a' : '#8899b4';
+  const calcYel = isLight ? '#8a7a00' : '#facc15';
+  const cCol  = cm > 0.05 ? (isLight ? '#c05000' : '#f97316') : cm < -0.05 ? (isLight ? '#0a8a0a' : '#22c55e') : calcDim;
   document.getElementById('dCalc').innerHTML = [
-    {lbl:'HI '   + d.heatIndex + '\u00B0C \u2192 tier score', val:String(d.hiScore),                                  vc:'#8899b4'},
-    {lbl:'WBGT ' + d.wbgt      + '\u00B0C \u2192 tier score', val:String(d.wbgtScore),                                vc:'#8899b4'},
-    {lbl:'Dominant Blend (max\u00D70.75 + min\u00D70.25)',     val:d.combined != null ? d.combined.toFixed(2) : '\u2014', vc:'#facc15'},
+    {lbl:'HI '   + d.heatIndex + '\u00B0C \u2192 tier score', val:String(d.hiScore),                                  vc:calcDim},
+    {lbl:'WBGT ' + d.wbgt      + '\u00B0C \u2192 tier score', val:String(d.wbgtScore),                                vc:calcDim},
+    {lbl:'Dominant Blend (max\u00D70.75 + min\u00D70.25)',     val:d.combined != null ? d.combined.toFixed(2) : '\u2014', vc:calcYel},
     {lbl:'Vulnerability offset (vs. municipal avg)',            val:cSign + cm.toFixed(3),                             vc:cCol},
-    {lbl:'Final Combined Index',                                val:d.index.toFixed(1),                                vc:col, total:true},
+    {lbl:'Final Combined Index',                                val:d.index.toFixed(1),                                vc:safeTextColor(col), total:true},
   ].map(r => `<div class="calc-row${r.total ? ' ' : ''}">
     <span class="calc-lbl" ${r.total ? 'style="color:var(--text);font-weight:600"' : ''}>${r.lbl}</span>
     <span class="calc-val" style="color:${r.vc};${r.total ? 'font-size:15px' : ''}">${r.val}</span>
@@ -1015,7 +1033,7 @@ function fillPanel(name) {
       fields.map(f => `<div class="vul-row">
         <div class="vul-top">
           <span class="vul-name">${f.lbl}<span class="vul-note">${f.note}</span></span>
-          <span class="vul-pct" style="color:${f.reduces ? '#22c55e' : '#e8ecf4'}">${f.pct}%${f.reduces ? ' \u2193' : ''}</span>
+          <span class="vul-pct" style="color:${f.reduces ? 'var(--green)' : 'var(--text)'}">${f.pct}%${f.reduces ? ' \u2193' : ''}</span>
         </div>
         <div class="bar-bg"><div class="bar-fill" style="width:${f.pct}%;background:${f.barCol}"></div></div>
       </div>`).join('') +
@@ -1023,8 +1041,8 @@ function fillPanel(name) {
         <div class="vul-top">
           <span class="vul-name">Flood Prone<span class="vul-note">official DRRM designation</span></span>
           <span class="vul-pct">${vul.flood_prone
-            ? '<span style="color:#f97316;font-weight:700">Yes \u26A0</span>'
-            : '<span style="color:#22c55e">No</span>'}</span>
+            ? '<span style="color:var(--orange);font-weight:700">Yes \u26A0</span>'
+            : '<span style="color:var(--green)">No</span>'}</span>
         </div>
       </div>`;
   } else {
