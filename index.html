@@ -380,6 +380,9 @@ header{
 .tour-noshow{display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--subtle-sep)}
 .tour-noshow label{font-size:11px;color:var(--dim);cursor:pointer;user-select:none}
 .tour-noshow input[type="checkbox"]{accent-color:var(--accent);cursor:pointer}
+.tour-skip{margin-left:auto;padding:4px 12px;border-radius:6px;font-size:10px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.1);color:var(--red);transition:all .15s;display:none}
+.tour-skip:hover{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.5)}
+.tour-skip.visible{display:block}
 
 @media (max-width: 768px) {
   .tour-card{max-width:calc(100vw - 32px);min-width:220px;padding:16px 18px 14px}
@@ -1703,8 +1706,9 @@ function buildTourDOM() {
       </div>
     </div>
     <div class="tour-noshow">
-      <input type="checkbox" id="tourNoShow">
+      <input type="checkbox" id="tourNoShow" onchange="document.getElementById('tourSkip').classList.toggle('visible', this.checked)">
       <label for="tourNoShow">Do not show this again</label>
+      <button class="tour-skip" id="tourSkip" onclick="endTour()">Skip Tour</button>
     </div>
   `;
   document.body.appendChild(card);
