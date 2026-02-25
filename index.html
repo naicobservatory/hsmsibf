@@ -47,6 +47,10 @@
 [data-theme="light"] .leaflet-bar a{background:var(--card)!important;color:var(--text)!important;border-color:var(--border)!important}
 [data-theme="light"] .leaflet-bar a:hover{background:var(--subtle-hover)!important}
 
+/* Help / tour button */
+.tour-help-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--card);border:1px solid var(--border);border-radius:50%;cursor:pointer;font-size:15px;font-weight:700;color:var(--muted);transition:all .2s;padding:0;font-family:'JetBrains Mono',monospace}
+.tour-help-btn:hover{background:var(--subtle-hover);color:var(--accent)}
+
 /* Theme toggle — Within (theme-toggles.com) */
 .theme-toggle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--card);border:1px solid var(--border);border-radius:50%;cursor:pointer;color:var(--muted);transition:all .2s;padding:0}
 .theme-toggle:hover{background:var(--subtle-hover);color:var(--text)}
@@ -255,6 +259,7 @@ header{
   .alarm-btn{padding:4px 8px;font-size:10px}
   .theme-toggle{width:28px;height:28px}
   .theme-toggle svg{width:15px;height:15px}
+  .tour-help-btn{width:28px;height:28px;font-size:13px}
   .alarm-btn .alarm-icon{width:14px;height:14px}
 
   /* --- SIDEBAR becomes bottom sheet --- */
@@ -344,10 +349,42 @@ header{
   .alarm-btn{padding:3px 6px;font-size:9px}
   .theme-toggle{width:24px;height:24px}
   .theme-toggle svg{width:13px;height:13px}
+  .tour-help-btn{width:24px;height:24px;font-size:11px}
   .clock{display:none}
   .sidebar{padding:8px;max-height:40vh}
   .rval{font-size:16px}
   .impact-index{font-size:24px}
+}
+
+/* ================================================================
+   GUIDED TOUR / ONBOARDING OVERLAY
+   ================================================================ */
+.tour-overlay{position:fixed;inset:0;z-index:9998;pointer-events:none;transition:opacity .3s}
+.tour-overlay.hidden{opacity:0;pointer-events:none!important}
+.tour-backdrop{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.55);pointer-events:auto;transition:opacity .3s}
+.tour-spotlight{position:absolute;z-index:9999;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.55);pointer-events:none;transition:all .35s cubic-bezier(.4,0,.2,1)}
+.tour-card{position:absolute;z-index:10000;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 22px 16px;max-width:340px;min-width:260px;box-shadow:0 12px 40px rgba(0,0,0,.35);pointer-events:auto;transition:all .3s cubic-bezier(.4,0,.2,1);opacity:1}
+.tour-card.hidden{opacity:0;transform:translateY(8px)}
+.tour-step-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.tour-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+.tour-desc{font-size:12.5px;line-height:1.7;color:var(--muted);margin-bottom:16px}
+.tour-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tour-dots{display:flex;gap:5px}
+.tour-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all .2s}
+.tour-dot.active{background:var(--accent);transform:scale(1.2)}
+.tour-btns{display:flex;gap:6px}
+.tour-btn{padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--muted);transition:all .15s}
+.tour-btn:hover{background:var(--subtle-hover);color:var(--text)}
+.tour-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.tour-btn.primary:hover{opacity:.85}
+.tour-noshow{display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--subtle-sep)}
+.tour-noshow label{font-size:11px;color:var(--dim);cursor:pointer;user-select:none}
+.tour-noshow input[type="checkbox"]{accent-color:var(--accent);cursor:pointer}
+
+@media (max-width: 768px) {
+  .tour-card{max-width:calc(100vw - 32px);min-width:220px;padding:16px 18px 14px}
+  .tour-title{font-size:14px}
+  .tour-desc{font-size:11.5px}
 }
 
 </style>
@@ -362,6 +399,7 @@ header{
       <div><h1>Heat Stress Monitoring Portal</h1><small>Impact-Based Heat Stress Portal</small></div>
     </div>
     <div class="hstatus">
+      <button class="tour-help-btn" onclick="startTour()" title="Show guided tour">?</button>
       <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" type="button" title="Toggle theme" aria-label="Toggle theme">
         <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="theme-toggle__within" height="1em" width="1em" viewBox="0 0 32 32" fill="currentColor">
           <clipPath id="theme-toggle__within__clip"><path d="M0 0h32v32h-32ZM6 16A1 1 0 0026 16 1 1 0 006 16"/></clipPath>
@@ -389,7 +427,7 @@ header{
 
     <div class="card">
       <div class="card-h">
-        <span class="card-l">5 Min Average Station Readings</span>
+        <span class="card-l">1-Hour Rolling Average Readings</span>
         <span class="badge" id="stationTime" style="background:rgba(59,130,246,.15);color:var(--accent)">--</span>
       </div>
       <div class="readings-grid">
@@ -1190,6 +1228,7 @@ async function fetchLive() {
 
     applyLive(displayHI, displayWBGT, displayTemp, displayHum);
     document.getElementById('loadOv').classList.add('gone');
+    maybeStartTour();
 
   } catch(err) {
     dot.style.background = 'var(--red)';
@@ -1550,6 +1589,277 @@ function scheduleFetch() {
     setInterval(fetchLive, INTERVAL);
   }, msUntilNext);
 }
+// ============================================================
+//  GUIDED TOUR / ONBOARDING
+// ============================================================
+const TOUR_STEPS = [
+  {
+    target: 'header',
+    title: 'Welcome to HeatGuard! 🌡️',
+    desc: 'This is the Heat Stress Monitoring Portal for Naic, Cavite. It shows real-time heat risk data for all 30 barangays. Let me give you a quick tour!',
+    pos: 'bottom-center'
+  },
+  {
+    target: 'themeBtn',
+    title: 'Theme Toggle',
+    desc: 'Switch between dark and light mode. Your preference is saved automatically.',
+    pos: 'bottom-left'
+  },
+  {
+    target: 'alarmBtn',
+    title: 'Heat Alarm',
+    desc: 'Turn this on to get an audio alert when any barangay reaches "Dangerous" level (index 4.0 or above). An alarm sound will play when the threshold is exceeded.',
+    pos: 'bottom-left'
+  },
+  {
+    target: '.chip',
+    title: 'Live Status',
+    desc: 'Shows the connection status and date. The green dot pulses when data is being received from the weather station every 5 minutes.',
+    pos: 'bottom-left'
+  },
+  {
+    target: '.card:nth-child(2)',
+    title: 'Station Readings',
+    desc: 'Displays the 1-hour rolling average of Heat Index, WBGT, Temperature, and Humidity from the weather station. Click any reading to see its 24-hour chart.',
+    pos: 'right',
+    ctx: '.sidebar'
+  },
+  {
+    target: '#miBox',
+    title: 'Municipal Impact Level',
+    desc: 'The overall heat stress rating for the municipality based on the combined index. Includes a detailed impact description with sector-specific warnings. Use the EN / TAG / CEB buttons to switch language.',
+    pos: 'right',
+    ctx: '.sidebar'
+  },
+  {
+    target: '#bList',
+    title: 'Barangay List',
+    desc: 'All 30 barangays ranked by their heat stress index. Each has a color-coded dot and risk label. Click any barangay to zoom in on the map and see its detailed profile.',
+    pos: 'right',
+    ctx: '.sidebar'
+  },
+  {
+    target: '.movl',
+    title: 'Map Overview Bar',
+    desc: 'Quick glance at the municipal-level Heat Index, WBGT, and Combined Index readings — always visible on top of the map.',
+    pos: 'bottom-center'
+  },
+  {
+    target: '#map',
+    title: 'Interactive Map',
+    desc: 'Each barangay is color-coded by heat risk level. Hover to highlight, click to open the detail panel. You can zoom, pan, and switch between Dark, Light, Streets, Satellite, and Topo basemaps using the layer control (top-right).',
+    pos: 'center'
+  },
+  {
+    target: '#mapLegend',
+    title: 'Color Legend',
+    desc: 'Shows the 9-level Combined Index scale from 1.0 (No Significant Risk) to 5.0 (Emergency). Click the header to collapse or expand it.',
+    pos: 'top-right'
+  },
+  {
+    target: '#mapLogo',
+    title: 'Observatory Logo',
+    desc: 'Double-click this logo anytime to reset the map zoom back to the full municipality view.',
+    pos: 'top-left'
+  },
+  {
+    target: '.detail',
+    title: 'Detail Panel',
+    desc: 'When you click a barangay, this panel slides open showing its index score, impact description, station readings, scoring breakdown, and vulnerability factors. Click ✕ to close it.',
+    pos: 'left'
+  }
+];
+
+let tourStep = 0;
+let tourActive = false;
+
+function buildTourDOM() {
+  // Backdrop
+  const backdrop = document.createElement('div');
+  backdrop.className = 'tour-backdrop';
+  backdrop.id = 'tourBackdrop';
+  backdrop.onclick = function() {}; // block clicks
+  document.body.appendChild(backdrop);
+
+  // Spotlight
+  const spot = document.createElement('div');
+  spot.className = 'tour-spotlight';
+  spot.id = 'tourSpotlight';
+  document.body.appendChild(spot);
+
+  // Card
+  const card = document.createElement('div');
+  card.className = 'tour-card';
+  card.id = 'tourCard';
+  card.innerHTML = `
+    <div class="tour-step-badge" id="tourBadge">Step 1 of ${TOUR_STEPS.length}</div>
+    <div class="tour-title" id="tourTitle"></div>
+    <div class="tour-desc" id="tourDesc"></div>
+    <div class="tour-footer">
+      <div class="tour-dots" id="tourDots">${TOUR_STEPS.map((_,i) => '<div class="tour-dot"></div>').join('')}</div>
+      <div class="tour-btns">
+        <button class="tour-btn" id="tourPrev" onclick="tourPrevStep()">Back</button>
+        <button class="tour-btn primary" id="tourNext" onclick="tourNextStep()">Next</button>
+      </div>
+    </div>
+    <div class="tour-noshow">
+      <input type="checkbox" id="tourNoShow">
+      <label for="tourNoShow">Do not show this again</label>
+    </div>
+  `;
+  document.body.appendChild(card);
+}
+
+function showTourStep(idx) {
+  tourStep = idx;
+  const step = TOUR_STEPS[idx];
+
+  // Find target element
+  let el = document.getElementById(step.target) || document.querySelector(step.target);
+  if (!el) { tourNextStep(); return; }
+
+  // If target is inside a scrollable context, scroll it into view first
+  if (step.ctx) {
+    const container = document.querySelector(step.ctx);
+    if (container) {
+      const elTop = el.offsetTop - container.offsetTop;
+      container.scrollTo({top: Math.max(0, elTop - 60), behavior:'smooth'});
+    }
+  }
+
+  // Get position after potential scroll
+  setTimeout(function() {
+    const rect = el.getBoundingClientRect();
+    const pad = 8;
+
+    // Spotlight
+    const spot = document.getElementById('tourSpotlight');
+    spot.style.top = (rect.top - pad) + 'px';
+    spot.style.left = (rect.left - pad) + 'px';
+    spot.style.width = (rect.width + pad*2) + 'px';
+    spot.style.height = (rect.height + pad*2) + 'px';
+
+    // Card content
+    document.getElementById('tourBadge').textContent = 'Step ' + (idx+1) + ' of ' + TOUR_STEPS.length;
+    document.getElementById('tourTitle').textContent = step.title;
+    document.getElementById('tourDesc').textContent = step.desc;
+
+    // Dots
+    document.querySelectorAll('#tourDots .tour-dot').forEach(function(d,i) {
+      d.classList.toggle('active', i === idx);
+    });
+
+    // Buttons
+    document.getElementById('tourPrev').style.display = idx === 0 ? 'none' : '';
+    const nextBtn = document.getElementById('tourNext');
+    nextBtn.textContent = idx === TOUR_STEPS.length - 1 ? 'Got it!' : 'Next';
+
+    // Position card
+    positionTourCard(rect, step.pos);
+  }, 150);
+}
+
+function positionTourCard(rect, pos) {
+  const card = document.getElementById('tourCard');
+  const cw = 340, gap = 16;
+  let top, left;
+
+  switch(pos) {
+    case 'bottom-center':
+      top = rect.bottom + gap;
+      left = rect.left + rect.width/2 - cw/2;
+      break;
+    case 'bottom-left':
+      top = rect.bottom + gap;
+      left = rect.left;
+      break;
+    case 'top-right':
+      top = rect.top - gap - 220;
+      left = rect.right + gap;
+      break;
+    case 'top-left':
+      top = rect.top - gap - 220;
+      left = rect.left - cw - gap;
+      break;
+    case 'right':
+      top = rect.top;
+      left = rect.right + gap;
+      break;
+    case 'left':
+      top = rect.top;
+      left = rect.left - cw - gap;
+      break;
+    case 'center':
+      top = rect.top + rect.height/2 - 110;
+      left = rect.left + rect.width/2 - cw/2;
+      break;
+    default:
+      top = rect.bottom + gap;
+      left = rect.left;
+  }
+
+  // Keep on screen
+  const vw = window.innerWidth, vh = window.innerHeight;
+  if (left < 12) left = 12;
+  if (left + cw > vw - 12) left = vw - cw - 12;
+  if (top < 12) top = 12;
+  if (top > vh - 250) top = vh - 250;
+
+  card.style.top = top + 'px';
+  card.style.left = left + 'px';
+}
+
+function tourNextStep() {
+  if (tourStep >= TOUR_STEPS.length - 1) {
+    endTour();
+    return;
+  }
+  showTourStep(tourStep + 1);
+}
+
+function tourPrevStep() {
+  if (tourStep > 0) showTourStep(tourStep - 1);
+}
+
+function endTour() {
+  tourActive = false;
+  if (document.getElementById('tourNoShow')?.checked) {
+    localStorage.setItem('heatguard-notour', '1');
+  }
+  document.getElementById('tourBackdrop')?.remove();
+  document.getElementById('tourSpotlight')?.remove();
+  document.getElementById('tourCard')?.remove();
+}
+
+function startTour() {
+  if (tourActive) return;
+  tourActive = true;
+  // Clean up any existing tour DOM
+  document.getElementById('tourBackdrop')?.remove();
+  document.getElementById('tourSpotlight')?.remove();
+  document.getElementById('tourCard')?.remove();
+  buildTourDOM();
+  showTourStep(0);
+}
+
+// ── Auto-start tour on first visit (after data loads) ──
+function maybeStartTour() {
+  if (localStorage.getItem('heatguard-notour') === '1') return;
+  setTimeout(startTour, 1200);
+}
+
+// Keyboard: Escape = close, ArrowRight/Enter = next, ArrowLeft = back
+document.addEventListener('keydown', function(e) {
+  if (!tourActive) return;
+  if (e.key === 'Escape') endTour();
+  else if (e.key === 'ArrowRight' || e.key === 'Enter') tourNextStep();
+  else if (e.key === 'ArrowLeft') tourPrevStep();
+});
+
+// Reposition on resize
+window.addEventListener('resize', function() {
+  if (tourActive) showTourStep(tourStep);
+});
 </script>
 </body>
 </html>
