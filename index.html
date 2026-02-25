@@ -226,10 +226,11 @@ header{
 .bar-fill{height:100%;border-radius:3px;transition:width .55s cubic-bezier(.4,0,.2,1)}
 
 /* Reset Zoom — custom Leaflet control */
-.leaflet-control-resetzoom a{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:var(--card)!important;border:1px solid var(--border)!important;border-radius:4px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s,background .15s}
-.leaflet-control-resetzoom a:hover{background:var(--subtle-hover)!important}
+.leaflet-control-resetzoom{background:none!important;border:none!important;box-shadow:none!important}
+.leaflet-control-resetzoom a{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:transparent!important;border:none!important;box-shadow:none!important;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s}
+.leaflet-control-resetzoom a:hover{opacity:.7!important}
 .leaflet-control-resetzoom a.visible{opacity:1;pointer-events:auto}
-.leaflet-control-resetzoom img{width:16px;height:16px}
+.leaflet-control-resetzoom img{width:20px;height:20px}
 [data-theme="light"] .leaflet-control-resetzoom img{filter:brightness(0.3)}
 
 /* Leaflet layer control override */
