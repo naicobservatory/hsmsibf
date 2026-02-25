@@ -811,7 +811,7 @@ const ResetZoomControl = L.Control.extend({
     const link = L.DomUtil.create('a', '', container);
     link.href = '#';
     link.title = 'Reset to full view';
-    link.innerHTML = '<img src="reset_zoom.png" alt="Reset Zoom">';
+    link.innerHTML = '<img src="icons/reset_zoom.png" alt="Reset Zoom">';
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.on(link, 'click', function(e) {
       L.DomEvent.preventDefault(e);
