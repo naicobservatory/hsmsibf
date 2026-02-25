@@ -227,11 +227,9 @@ header{
 
 /* Reset Zoom — custom Leaflet control */
 .leaflet-control-resetzoom{background:none!important;border:none!important;box-shadow:none!important}
-.leaflet-control-resetzoom a{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:transparent!important;border:none!important;box-shadow:none!important;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s}
-.leaflet-control-resetzoom a:hover{opacity:.7!important}
+.leaflet-control-resetzoom a{display:flex;align-items:center;justify-content:center;padding:4px 10px;background:var(--overlay-bg)!important;backdrop-filter:blur(10px);border:1px solid var(--border)!important;border-radius:6px;cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .25s,background .15s}
+.leaflet-control-resetzoom a:hover{background:var(--card)!important;color:var(--text)}
 .leaflet-control-resetzoom a.visible{opacity:1;pointer-events:auto}
-.leaflet-control-resetzoom img{width:20px;height:20px}
-[data-theme="light"] .leaflet-control-resetzoom img{filter:brightness(0.3)}
 
 /* Leaflet layer control override */
 .leaflet-control-layers{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:8px!important}
@@ -812,7 +810,7 @@ const ResetZoomControl = L.Control.extend({
     const link = L.DomUtil.create('a', '', container);
     link.href = '#';
     link.title = 'Reset to full view';
-    link.innerHTML = '<img src="icons/reset_zoom.png" alt="Reset Zoom">';
+    link.innerHTML = 'Reset Zoom';
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.on(link, 'click', function(e) {
       L.DomEvent.preventDefault(e);
