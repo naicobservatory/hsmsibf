@@ -153,7 +153,8 @@ header{
 .odiv{width:1px;height:28px;background:var(--border)}
 .click-hint{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:800;background:var(--overlay-bg);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:6px 16px;font-size:11px;color:var(--muted);pointer-events:none;white-space:nowrap;transition:opacity .4s}
 .click-hint.gone{opacity:0}
-.map-logo{position:absolute;bottom:18px;right:18px;z-index:800;width:90px;height:90px;border-radius:50%;background:var(--logo-bg);box-shadow:0 2px 8px rgba(0,0,0,.4);pointer-events:none;object-fit:cover}
+.map-logo{position:absolute;bottom:18px;right:18px;z-index:800;width:90px;height:90px;border-radius:50%;background:var(--logo-bg);box-shadow:0 2px 8px rgba(0,0,0,.4);object-fit:cover;cursor:pointer;pointer-events:auto;transition:transform .15s,box-shadow .15s}
+.map-logo:hover{transform:scale(1.05);box-shadow:0 4px 14px rgba(0,0,0,.5)}
 .map-legend{position:absolute;bottom:18px;left:18px;z-index:800;background:var(--overlay-bg);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
 .map-legend-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:10px}
 .map-legend-title{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);font-weight:500}
@@ -224,12 +225,6 @@ header{
 .vul-pct{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;white-space:nowrap}
 .bar-bg{height:5px;background:var(--subtle-hover);border-radius:3px;overflow:hidden}
 .bar-fill{height:100%;border-radius:3px;transition:width .55s cubic-bezier(.4,0,.2,1)}
-
-/* Reset Zoom — custom Leaflet control */
-.leaflet-control-resetzoom{background:none!important;border:none!important;box-shadow:none!important}
-.leaflet-control-resetzoom a{display:flex;align-items:center;justify-content:center;padding:4px 10px;background:var(--overlay-bg)!important;backdrop-filter:blur(10px);border:1px solid var(--border)!important;border-radius:6px;cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .25s,background .15s}
-.leaflet-control-resetzoom a:hover{background:var(--card)!important;color:var(--text)}
-.leaflet-control-resetzoom a.visible{opacity:1;pointer-events:auto}
 
 /* Leaflet layer control override */
 .leaflet-control-layers{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:8px!important}
@@ -455,7 +450,7 @@ header{
       <div class="os"><div class="osv" id="oIdx">--</div><div class="osl">Combined Index</div></div>
     </div>
     <div class="click-hint" id="clickHint">Click any barangay to view its detailed heat stress profile</div>
-    <img src="logo.png" alt="Naic Observatory" class="map-logo">
+    <img src="logo.png" alt="Naic Observatory" class="map-logo" id="mapLogo" ondblclick="resetMapZoom()" title="Double-click to reset zoom">
     <div class="map-legend" id="mapLegend">
       <div class="map-legend-header" onclick="toggleLegend()">
         <span class="map-legend-title">Combined Index Legend</span>
@@ -475,7 +470,7 @@ header{
     </div>
     <div class="lov" id="loadOv">
       <div class="spin"></div>
-      <div class="ltxt">Loading HeatGuard</div>
+      <div class="ltxt">Wait lang po. &#128583;</div>
       <div class="ltxt2">Fetching impact matrix and live weather data&#8230;</div>
     </div>
     <div id="map"></div>
@@ -800,47 +795,13 @@ const stationMarker2 = L.marker([14.322429755684219, 120.7718108314786], { icon:
 
 let mapFirstRender = true;
 let defaultBounds = null;
-let resetZoomLink = null;
 
-// ── Reset Zoom — custom Leaflet control below layer switcher ──
-const ResetZoomControl = L.Control.extend({
-  options: { position: 'topright' },
-  onAdd: function() {
-    const container = L.DomUtil.create('div', 'leaflet-control-resetzoom leaflet-bar');
-    const link = L.DomUtil.create('a', '', container);
-    link.href = '#';
-    link.title = 'Reset to full view';
-    link.innerHTML = 'Reset Zoom';
-    L.DomEvent.disableClickPropagation(container);
-    L.DomEvent.on(link, 'click', function(e) {
-      L.DomEvent.preventDefault(e);
-      resetMapZoom();
-    });
-    resetZoomLink = link;
-    return container;
-  }
-});
-map.addControl(new ResetZoomControl());
-
-function checkResetZoom() {
-  if (!resetZoomLink || !defaultBounds) return;
-  const curr = map.getBounds();
-  const def  = defaultBounds;
-  const dLat = Math.abs(curr.getCenter().lat - def.getCenter().lat);
-  const dLng = Math.abs(curr.getCenter().lng - def.getCenter().lng);
-  const zoomDiff = Math.abs(map.getZoom() - map.getBoundsZoom(def));
-  if (dLat > 0.002 || dLng > 0.002 || zoomDiff > 0.5) {
-    resetZoomLink.classList.add('visible');
-  } else {
-    resetZoomLink.classList.remove('visible');
-  }
-}
+// ── Reset Zoom — double-click the map logo to return to full view ──
 function resetMapZoom() {
   if (defaultBounds) map.fitBounds(defaultBounds, {animate:true, duration:0.4});
-  if (resetZoomLink) resetZoomLink.classList.remove('visible');
 }
-map.on('moveend', checkResetZoom);
-map.on('zoomend', checkResetZoom);
+// Prevent logo double-click from triggering Leaflet's zoom-in
+document.getElementById('mapLogo')?.addEventListener('dblclick', function(e) { e.stopPropagation(); });
 
 function renderMap() {
   if (geoL) map.removeLayer(geoL);
