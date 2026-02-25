@@ -225,6 +225,12 @@ header{
 .bar-bg{height:5px;background:var(--subtle-hover);border-radius:3px;overflow:hidden}
 .bar-fill{height:100%;border-radius:3px;transition:width .55s cubic-bezier(.4,0,.2,1)}
 
+/* Reset Zoom button */
+.reset-zoom{position:absolute;top:90px;right:12px;z-index:800;background:var(--overlay-bg);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:5px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;transform:translateY(-6px)}
+.reset-zoom:hover{background:var(--card);color:var(--text)}
+.reset-zoom.visible{opacity:1;pointer-events:auto;transform:translateY(0)}
+.reset-zoom svg{width:13px;height:13px}
+
 /* Leaflet layer control override */
 .leaflet-control-layers{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:8px!important}
 /* ================================================================
@@ -298,6 +304,7 @@ header{
   .osl{font-size:7.5px}
   .odiv{height:20px}
   .map-logo{width:50px;height:50px;bottom:10px;right:10px}
+  .reset-zoom{top:auto;bottom:55px;right:10px;font-size:10px;padding:5px 10px}
   .map-legend{bottom:10px;left:10px;padding:6px 8px;border-radius:8px}
   .click-hint{font-size:9px;padding:4px 10px;bottom:10px}
 
@@ -449,6 +456,10 @@ header{
       <div class="os"><div class="osv" id="oIdx">--</div><div class="osl">Combined Index</div></div>
     </div>
     <div class="click-hint" id="clickHint">Click any barangay to view its detailed heat stress profile</div>
+    <button class="reset-zoom" id="resetZoom" onclick="resetMapZoom()" title="Reset to full view">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 3.5v6h6"/><path d="M3.5 3.5 9 9"/><path d="M20.5 20.5v-6h-6"/><path d="M20.5 20.5 15 15"/></svg>
+      Reset Zoom
+    </button>
     <img src="logo.png" alt="Naic Observatory" class="map-logo">
     <div class="map-legend" id="mapLegend">
       <div class="map-legend-header" onclick="toggleLegend()">
@@ -793,6 +804,30 @@ const stationMarker2 = L.marker([14.322429755684219, 120.7718108314786], { icon:
   .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>Naic DRRMO AWS</b><br><span style="font-size:11px;color:#666">14.3224°N, 120.7718°E</span></div>');
 
 let mapFirstRender = true;
+let defaultBounds = null;
+
+// ── Reset Zoom — show button when user zooms/pans away from default ──
+function checkResetZoom() {
+  const btn = document.getElementById('resetZoom');
+  if (!btn || !defaultBounds) return;
+  const curr = map.getBounds();
+  const def  = defaultBounds;
+  // Compare current vs default — threshold of ~0.002° (~200m) to allow tiny drift
+  const dLat = Math.abs(curr.getCenter().lat - def.getCenter().lat);
+  const dLng = Math.abs(curr.getCenter().lng - def.getCenter().lng);
+  const zoomDiff = Math.abs(map.getZoom() - map.getBoundsZoom(def));
+  if (dLat > 0.002 || dLng > 0.002 || zoomDiff > 0.5) {
+    btn.classList.add('visible');
+  } else {
+    btn.classList.remove('visible');
+  }
+}
+function resetMapZoom() {
+  if (defaultBounds) map.fitBounds(defaultBounds, {animate:true, duration:0.4});
+  document.getElementById('resetZoom')?.classList.remove('visible');
+}
+map.on('moveend', checkResetZoom);
+map.on('zoomend', checkResetZoom);
 
 function renderMap() {
   if (geoL) map.removeLayer(geoL);
@@ -831,7 +866,8 @@ function renderMap() {
 
   // Only fit bounds on the very first render — preserve user zoom/pan on updates
   if (mapFirstRender && geoL.getBounds().isValid()) {
-    map.fitBounds(geoL.getBounds());
+    defaultBounds = geoL.getBounds();
+    map.fitBounds(defaultBounds);
     mapFirstRender = false;
   }
 
