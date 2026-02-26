@@ -218,7 +218,22 @@ body {
   width: 180px; height: 180px; border-radius: 12px;
   border: 1px solid var(--border); margin: 20px auto;
   object-fit: contain; background: #fff; padding: 8px;
+  cursor: pointer; transition: transform .2s;
 }
+.donate-qr:hover { transform: scale(1.03); }
+.qr-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity .25s;
+}
+.qr-overlay.visible { opacity: 1; }
+.qr-overlay img {
+  max-width: 85vw; max-height: 85vh; border-radius: 16px;
+  background: #fff; padding: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  transform: scale(.85); transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.qr-overlay.visible img { transform: scale(1); }
 .donate-gcash {
   display: inline-flex; align-items: center; gap: 8px;
   font-family: 'JetBrains Mono', monospace;
@@ -362,7 +377,7 @@ body {
     <div class="section-label">Support This Initiative</div>
     <div class="donate-card">
       <p>For any donations, you can scan this QR code or send to the GCash number below:</p>
-      <img src="gcash_qr.jpg" alt="GCash QR Code" class="donate-qr">
+      <img src="gcash_qr.jpg" alt="GCash QR Code" class="donate-qr" onclick="openQR(this.src)" title="Click to enlarge">
       <div>
         <span class="donate-gcash">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#007DFE"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="sans-serif">G</text></svg>
@@ -370,7 +385,7 @@ body {
         </span>
       </div>
       <p class="donate-note">
-        Ang anumang inyong donasyon ay malaking bagay na po sa akin upang ipag patuloy ang aking adhikaing makatulong sa mamamayan. Maraming salamat po! 🙏
+        Your donations are important for me para ipag patuloy ang aking adhikaing makatulong sa ating kababayan. Salamat po! 🙏
       </p>
     </div>
   </div>
@@ -387,6 +402,25 @@ body {
 // ── Inherit theme from portal ──
 const saved = localStorage.getItem('heatguard-theme');
 if (saved) document.documentElement.setAttribute('data-theme', saved);
+
+// ── QR code click-to-zoom ──
+function openQR(src) {
+  const ov = document.createElement('div');
+  ov.className = 'qr-overlay';
+  ov.innerHTML = '<img src="' + src + '" alt="GCash QR Code">';
+  ov.onclick = function() {
+    ov.classList.remove('visible');
+    setTimeout(function() { ov.remove(); }, 250);
+  };
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() { ov.classList.add('visible'); });
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const ov = document.querySelector('.qr-overlay');
+    if (ov) { ov.classList.remove('visible'); setTimeout(function() { ov.remove(); }, 250); }
+  }
+});
 </script>
 </body>
 </html>
