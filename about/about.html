@@ -1,1 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — Naic Heat Stress Monitoring Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --bg:#0b1120; --bg2:#111827; --card:#161e2e; --border:#1e2a3e;
+  --text:#e8ecf4; --muted:#8899b4; --dim:#5a6a85; --accent:#3b82f6;
+  --green:#22c55e; --orange:#f97316; --red:#ef4444;
+  --subtle:rgba(255,255,255,.03); --subtle-border:rgba(255,255,255,.06);
+  --glow:rgba(59,130,246,.08);
+}
+[data-theme="light"] {
+  --bg:#f0f2f5; --bg2:#ffffff; --card:#f8f9fb; --border:#d5dbe5;
+  --text:#1a1f2e; --muted:#4a5568; --dim:#6b7a90; --accent:#2563eb;
+  --green:#16a34a; --orange:#ea580c; --red:#dc2626;
+  --subtle:rgba(0,0,0,.03); --subtle-border:rgba(0,0,0,.07);
+  --glow:rgba(59,130,246,.05);
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Ambient background ── */
+.bg-glow {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(59,130,246,.06), transparent),
+    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(249,115,22,.04), transparent);
+}
+
+/* ── Navigation ── */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 40px;
+  background: rgba(11,17,32,.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="light"] .nav {
+  background: rgba(255,255,255,.88);
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none; color: var(--text);
+}
+.nav-brand img { width: 32px; height: 32px; }
+.nav-brand span {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900; font-size: 15px;
+  background: linear-gradient(135deg, #fff, #8899b4);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+[data-theme="light"] .nav-brand span {
+  background: linear-gradient(135deg, #1a1f2e, #5a657a);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.nav-back {
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  text-decoration: none; display: flex; align-items: center; gap: 6px;
+  padding: 6px 16px; border: 1px solid var(--accent);
+  border-radius: 8px; transition: all .2s;
+}
+.nav-back:hover { background: var(--accent); color: #fff; }
+
+/* ── Hero ── */
+.hero {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 80px 24px 40px; text-align: center;
+}
+.hero-photo {
+  width: 160px; height: 160px; border-radius: 50%;
+  object-fit: cover; border: 4px solid var(--accent);
+  box-shadow: 0 0 40px rgba(59,130,246,.2), 0 8px 32px rgba(0,0,0,.3);
+  margin-bottom: 28px;
+  transition: transform .3s;
+}
+.hero-photo:hover { transform: scale(1.04); }
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 38px; font-weight: 900;
+  margin-bottom: 8px; letter-spacing: -.5px;
+}
+.hero-subtitle {
+  font-size: 15px; color: var(--muted);
+  max-width: 480px; line-height: 1.7;
+}
+.hero-tags {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: center; margin-top: 20px;
+}
+.hero-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600;
+  padding: 5px 14px; border-radius: 20px;
+  border: 1px solid var(--border); color: var(--muted);
+  background: var(--subtle);
+}
+
+/* ── Content sections ── */
+.content {
+  position: relative; z-index: 1;
+  max-width: 720px; margin: 0 auto;
+  padding: 20px 24px 80px;
+}
+.section {
+  margin-bottom: 48px;
+}
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 2px;
+  color: var(--accent); margin-bottom: 16px;
+}
+.section p {
+  font-size: 15px; line-height: 1.85;
+  color: var(--muted);
+}
+.section p + p { margin-top: 16px; }
+
+/* ── Mission card ── */
+.mission-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px 30px;
+  margin-top: 24px;
+  border-left: 4px solid var(--accent);
+}
+.mission-card p {
+  font-size: 14px; line-height: 1.85;
+  color: var(--muted); font-style: italic;
+}
+
+/* ── Instruments grid ── */
+.instruments {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 14px; margin-top: 24px;
+}
+.instrument-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 22px 18px;
+  text-align: center;
+  transition: all .25s;
+}
+.instrument-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+.instrument-icon {
+  font-size: 28px; margin-bottom: 10px;
+  display: block;
+}
+.instrument-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  color: var(--text); letter-spacing: .5px;
+}
+.instrument-desc {
+  font-size: 11px; color: var(--dim);
+  margin-top: 4px; line-height: 1.5;
+}
+
+/* ── Observatory badge ── */
+.observatory-badge {
+  display: flex; align-items: center; gap: 20px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 24px 28px;
+  margin-top: 24px;
+}
+.observatory-badge img {
+  width: 72px; height: 72px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+  background: rgba(255,255,255,.08);
+}
+.observatory-badge-text h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px; font-weight: 700;
+  margin-bottom: 4px;
+}
+.observatory-badge-text p {
+  font-size: 12px !important; line-height: 1.6 !important;
+  color: var(--dim) !important;
+}
+
+/* ── Footer ── */
+.about-footer {
+  position: relative; z-index: 1;
+  text-align: center;
+  padding: 28px 24px 36px;
+  border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--dim);
+}
+.about-footer a { color: var(--accent); text-decoration: none; }
+.about-footer a:hover { text-decoration: underline; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .nav { padding: 12px 16px; }
+  .nav-brand span { font-size: 13px; }
+  .hero { padding: 50px 20px 30px; }
+  .hero-photo { width: 120px; height: 120px; }
+  .hero h1 { font-size: 28px; }
+  .instruments { grid-template-columns: 1fr; }
+  .observatory-badge { flex-direction: column; text-align: center; }
+  .content { padding: 20px 18px 60px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<!-- NAVIGATION -->
+<nav class="nav">
+  <a href="../index.html" class="nav-brand">
+    <img src="../hoticon.png" alt="HeatGuard">
+    <span>HeatGuard Naic</span>
+  </a>
+  <a href="../index.html" class="nav-back">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    Back to Portal
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <img src="bryan.jpg" alt="Bryan" class="hero-photo">
+  <h1>About Me</h1>
+  <p class="hero-subtitle">
+    Hi, I'm <strong>Bryan</strong> — a Citizen Scientist and meteorology enthusiast currently based in Naic, Cavite.
+  </p>
+  <div class="hero-tags">
+    <span class="hero-tag">Citizen Scientist</span>
+    <span class="hero-tag">Meteorology</span>
+    <span class="hero-tag">Disaster Preparedness</span>
+    <span class="hero-tag">Naic, Cavite</span>
+  </div>
+</section>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- Passion & Mission -->
+  <div class="section">
+    <div class="section-label">My Mission</div>
+    <p>
+      I have a deep passion for meteorology and astronomy, and I firmly believe that science should serve the community. In 2024, I relocated to Naic with a clear mission: to help strengthen local disaster preparedness through science-based monitoring and public awareness.
+    </p>
+    <p>
+      As a Citizen Scientist and Local Disaster Manager, my goal is to help protect our community from natural hazards such as extreme heat, heavy rainfall, strong winds, storm surges, earthquakes, and volcanic activity that may affect our beloved town of Naic, Cavite.
+    </p>
+  </div>
+
+  <!-- Observatory -->
+  <div class="section">
+    <div class="section-label">Naic Meteorological Observatory</div>
+    <p>
+      This advocacy led me to establish the <strong>Naic Meteorological Observatory</strong> — a personally funded initiative dedicated to local weather and environmental monitoring. Through my own savings, I invested in essential instruments that allow me to provide real-time, science-based environmental data supporting public safety, risk reduction, and informed decision-making.
+    </p>
+    <div class="observatory-badge">
+      <img src="../logo.png" alt="Naic Meteorological Observatory">
+      <div class="observatory-badge-text">
+        <h3>Naic Meteorological Observatory</h3>
+        <p>Personally funded local weather and environmental monitoring station serving Naic, Cavite since 2024.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instruments -->
+  <div class="section">
+    <div class="section-label">Instruments &amp; Sensors</div>
+    <p>
+      Through my own savings, I invested in essential instruments to monitor the environmental conditions that affect our community:
+    </p>
+    <div class="instruments">
+      <div class="instrument-card">
+        <span class="instrument-icon">🌦️</span>
+        <div class="instrument-name">AWS</div>
+        <div class="instrument-desc">Automatic Weather Station</div>
+      </div>
+      <div class="instrument-card">
+        <span class="instrument-icon">🌫️</span>
+        <div class="instrument-name">AQS</div>
+        <div class="instrument-desc">Air Quality Sensor</div>
+      </div>
+      <div class="instrument-card">
+        <span class="instrument-icon">🌡️</span>
+        <div class="instrument-name">HSS</div>
+        <div class="instrument-desc">Heat Stress Sensor</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Commitment -->
+  <div class="section">
+    <div class="section-label">My Commitment</div>
+    <div class="mission-card">
+      <p>
+        "As long as I am able, I remain committed to sharing technical and scientific assistance with our residents and supporting the Local Government of Naic in fulfilling our shared responsibility of safeguarding lives and communities."
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="about-footer">
+  Naic Meteorological Observatory &middot; Est. 2024 &middot;
+  <a href="../index.html">Back to Heat Stress Monitoring Portal</a>
+</footer>
+
+<script>
+// ── Inherit theme from portal ──
+const saved = localStorage.getItem('heatguard-theme');
+if (saved) document.documentElement.setAttribute('data-theme', saved);
+</script>
+</body>
+</html>
