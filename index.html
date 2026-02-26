@@ -243,14 +243,15 @@ header{
   /* Stack everything vertically */
   .app{
     grid-template-columns:1fr !important;
-    grid-template-rows:auto 1fr auto;
+    grid-template-rows:1fr auto;
     height:100vh;
     overflow:hidden;
+    padding-top:60px; /* fallback; JS syncs actual header height */
   }
   .app.panel-open{grid-template-columns:1fr !important}
 
   /* --- HEADER compact --- */
-  header{padding:0 12px;height:auto;min-height:50px;flex-wrap:wrap;gap:6px;padding-top:6px;padding-bottom:6px}
+  header{padding:0 12px;height:auto;min-height:50px;flex-wrap:wrap;gap:6px;padding-top:6px;padding-bottom:6px;position:fixed;top:0;left:0;right:0;z-index:1200}
   .brand{gap:8px}
   .brand-icon{width:28px;height:28px}
   .brand h1{font-size:13px}
@@ -999,11 +1000,20 @@ function selectBarangay(name) {
   document.getElementById('app').classList.add('panel-open');
   document.getElementById('clickHint').classList.add('gone');
 
+  // On mobile, collapse sidebar and adjust detail panel top to header height
+  if (window.innerWidth <= 768) {
+    document.getElementById('app').classList.add('sidebar-collapsed');
+    document.getElementById('sidebarToggle').innerHTML = '&#9650;';  // ▲
+    const hh = document.querySelector('header')?.offsetHeight || 60;
+    document.querySelector('.detail').style.top = hh + 'px';
+    setTimeout(function() { if (window.map) map.invalidateSize(); }, 350);
+  }
+
   // Highlight active row in list
   document.querySelectorAll('.bitem').forEach(el => el.classList.remove('active'));
   const sid = 'bi_' + name.replace(/[^a-zA-Z0-9]/g,'_');
   const listEl = document.getElementById(sid);
-  if (listEl) { listEl.classList.add('active'); listEl.scrollIntoView({block:'nearest'}); }
+  if (listEl) { listEl.classList.add('active'); }
 
   fillPanel(name);
 }
@@ -1124,6 +1134,15 @@ function closePanel() {
   activeB = null;
   document.getElementById('app').classList.remove('panel-open');
   document.getElementById('dBody').classList.remove('visible');
+
+  // On mobile, restore sidebar when panel closes
+  if (window.innerWidth <= 768) {
+    document.getElementById('app').classList.remove('sidebar-collapsed');
+    document.getElementById('sidebarToggle').innerHTML = '&#9660;';  // ▼
+    document.querySelector('.detail').style.top = '';
+    setTimeout(function() { if (window.map) map.invalidateSize(); }, 350);
+  }
+
   setTimeout(() => {
     document.getElementById('dPh').classList.remove('gone');
     if (geoL) geoL.resetStyle();
@@ -1431,14 +1450,25 @@ function toggleSidebar() {
 }
 
 // Update toggle arrow on resize (e.g. device rotation)
+function syncMobileHeaderHeight() {
+  if (window.innerWidth <= 768) {
+    const hh = document.querySelector('header')?.offsetHeight || 60;
+    document.querySelector('.app').style.paddingTop = hh + 'px';
+  } else {
+    document.querySelector('.app').style.paddingTop = '';
+  }
+}
 window.addEventListener('resize', function() {
   const btn = document.getElementById('sidebarToggle');
   const collapsed = document.querySelector('.app').classList.contains('sidebar-collapsed');
   const mobile = window.innerWidth <= 768;
   if (mobile) btn.innerHTML = collapsed ? '&#9650;' : '&#9660;';
   else btn.innerHTML = collapsed ? '&#9654;' : '&#9664;';
+  syncMobileHeaderHeight();
   if (window.map) setTimeout(function(){ map.invalidateSize(); }, 100);
 });
+// Initial sync after DOM renders
+requestAnimationFrame(syncMobileHeaderHeight);
 
 // ============================================================
 //  THEME TOGGLE (LIGHT / DARK)
