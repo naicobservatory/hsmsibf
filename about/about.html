@@ -117,10 +117,36 @@ body {
   background: var(--subtle); letter-spacing: .5px;
 }
 
+/* ── Side images (alternating left/right) ── */
+.section-with-img {
+  display: flex; align-items: flex-start; gap: 32px;
+}
+.section-with-img.img-right { flex-direction: row; }
+.section-with-img.img-left  { flex-direction: row-reverse; }
+.section-with-img .section-text { flex: 1; min-width: 0; }
+.section-side-img {
+  width: 220px; flex-shrink: 0;
+  border-radius: 14px; overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 28px rgba(0,0,0,.2);
+  position: sticky; top: 100px;
+}
+.section-side-img img {
+  width: 100%; display: block;
+  object-fit: cover;
+}
+.section-side-img .img-caption {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  color: var(--dim); text-align: center;
+  padding: 8px 10px; letter-spacing: .5px;
+  background: var(--card); border-top: 1px solid var(--border);
+}
+
 /* ── Content sections ── */
 .content {
   position: relative; z-index: 1;
-  max-width: 720px; margin: 0 auto;
+  max-width: 880px; margin: 0 auto;
   padding: 20px 24px 80px;
 }
 .section {
@@ -271,6 +297,8 @@ body {
   .hero h1 { font-size: 18px; }
   .instruments { grid-template-columns: 1fr; }
   .observatory-badge { flex-direction: column; text-align: center; }
+  .section-with-img, .section-with-img.img-left { flex-direction: column; }
+  .section-side-img { width: 100%; max-width: 260px; margin: 0 auto; position: static; }
   .content { padding: 20px 18px 60px; }
   .donate-qr { width: 150px; height: 150px; }
   .donate-gcash { font-size: 12px; padding: 7px 14px; }
@@ -312,28 +340,40 @@ body {
 <div class="content">
 
   <!-- Passion & Mission -->
-  <div class="section">
-    <div class="section-label">My Mission</div>
-    <p>
-      I have a deep passion for meteorology and astronomy, and I firmly believe that science should serve the community. In 2024, I relocated to Naic with a clear mission: to help strengthen local disaster preparedness through science-based monitoring and public awareness.
-    </p>
-    <p>
-      As a Citizen Scientist and Local Disaster Manager, my goal is to help protect our community from natural hazards such as extreme heat, heavy rainfall, strong winds, storm surges, earthquakes, and volcanic activity that may affect our beloved town of Naic, Cavite.
-    </p>
+  <div class="section section-with-img img-right">
+    <div class="section-text">
+      <div class="section-label">My Mission</div>
+      <p>
+        I have a deep passion for meteorology and astronomy, and I firmly believe that science should serve the community. In 2024, I relocated to Naic with a clear mission: to help strengthen local disaster preparedness through science-based monitoring and public awareness.
+      </p>
+      <p>
+        As a Citizen Scientist and Local Disaster Manager, my goal is to help protect our community from natural hazards such as extreme heat, heavy rainfall, strong winds, storm surges, earthquakes, and volcanic activity that may affect our beloved town of Naic, Cavite.
+      </p>
+    </div>
+    <div class="section-side-img">
+      <img src="my_pic1.png" alt="Bryan conducting field monitoring">
+      <div class="img-caption">Field monitoring in Naic</div>
+    </div>
   </div>
 
   <!-- Observatory -->
-  <div class="section">
-    <div class="section-label">Naic Meteorological Observatory</div>
-    <p>
-      This advocacy led me to establish the <strong>Naic Meteorological Observatory</strong> — a personally funded initiative dedicated to local weather and environmental monitoring. Through my own savings, I invested in essential instruments that allow me to provide real-time, science-based environmental data supporting public safety, risk reduction, and informed decision-making.
-    </p>
-    <div class="observatory-badge">
-      <img src="../logo.png" alt="Naic Meteorological Observatory">
-      <div class="observatory-badge-text">
-        <h3>Naic Meteorological Observatory</h3>
-        <p>Personally funded local weather and environmental monitoring station serving Naic, Cavite since 2024.</p>
+  <div class="section section-with-img img-left">
+    <div class="section-text">
+      <div class="section-label">Naic Meteorological Observatory</div>
+      <p>
+        This advocacy led me to establish the <strong>Naic Meteorological Observatory</strong> — a personally funded initiative dedicated to local weather and environmental monitoring. Through my own savings, I invested in essential instruments that allow me to provide real-time, science-based environmental data supporting public safety, risk reduction, and informed decision-making.
+      </p>
+      <div class="observatory-badge">
+        <img src="../logo.png" alt="Naic Meteorological Observatory">
+        <div class="observatory-badge-text">
+          <h3>Naic Meteorological Observatory</h3>
+          <p>Personally funded local weather and environmental monitoring station serving Naic, Cavite since 2024.</p>
+        </div>
       </div>
+    </div>
+    <div class="section-side-img">
+      <img src="my_pic2.png" alt="Naic Meteorological Observatory weather station">
+      <div class="img-caption">PPW Automatic Weather Station</div>
     </div>
   </div>
 
@@ -385,7 +425,7 @@ body {
         </span>
       </div>
       <p class="donate-note">
-        Your donations are important for me para ipag patuloy ang aking adhikaing makatulong sa ating kababayan. Salamat po! 🙏
+        Ang inyong anumang donasyon ay malaking tulong na po sa akin upang maipag papatuloy ko ang aking adhikain sa ating mamamayan. Salamat po! 🙏
       </p>
     </div>
   </div>
