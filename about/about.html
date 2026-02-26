@@ -205,6 +205,36 @@ body {
   color: var(--dim) !important;
 }
 
+/* ── Donation section ── */
+.donate-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px 30px;
+  margin-top: 24px; text-align: center;
+}
+.donate-card p {
+  font-size: 12px; line-height: 1.75; color: var(--muted);
+}
+.donate-qr {
+  width: 180px; height: 180px; border-radius: 12px;
+  border: 1px solid var(--border); margin: 20px auto;
+  object-fit: contain; background: #fff; padding: 8px;
+}
+.donate-gcash {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 700; color: var(--text);
+  background: var(--subtle); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 18px; margin: 12px 0;
+  letter-spacing: .5px;
+}
+.donate-gcash-icon {
+  width: 20px; height: 20px; border-radius: 4px;
+}
+.donate-note {
+  font-size: 11px; line-height: 1.75; color: var(--dim);
+  margin-top: 16px; font-style: italic;
+}
+
 /* ── Footer ── */
 .about-footer {
   position: relative; z-index: 1;
@@ -227,6 +257,8 @@ body {
   .instruments { grid-template-columns: 1fr; }
   .observatory-badge { flex-direction: column; text-align: center; }
   .content { padding: 20px 18px 60px; }
+  .donate-qr { width: 150px; height: 150px; }
+  .donate-gcash { font-size: 12px; padding: 7px 14px; }
 }
 </style>
 </head>
@@ -321,6 +353,24 @@ body {
     <div class="mission-card">
       <p>
         "As long as I am able, I remain committed to sharing technical and scientific assistance with our residents and supporting the Local Government of Naic in fulfilling our shared responsibility of safeguarding lives and communities."
+      </p>
+    </div>
+  </div>
+
+  <!-- Donations -->
+  <div class="section">
+    <div class="section-label">Support This Initiative</div>
+    <div class="donate-card">
+      <p>For any donations, you can scan this QR code or send to the GCash number below:</p>
+      <img src="gcash_qr.png" alt="GCash QR Code" class="donate-qr">
+      <div>
+        <span class="donate-gcash">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#007DFE"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="sans-serif">G</text></svg>
+          GCash: 0965-193-7084 — BRYAN E.
+        </span>
+      </div>
+      <p class="donate-note">
+        Your donations are important for me para ipag patuloy ang aking adhikaing makatulong sa ating kababayan. Salamat po! 🙏
       </p>
     </div>
   </div>
