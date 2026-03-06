@@ -94,8 +94,24 @@ header{
 .alarm-btn{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);padding:5px 12px;border-radius:20px;cursor:pointer;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;transition:all .2s}
 .alarm-btn:hover{background:var(--subtle-hover)}
 .alarm-btn.armed{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:var(--red)}
+.alarm-btn.armed + .alarm-thresh-btn{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:var(--red)}
 .alarm-btn .alarm-icon{width:18px;height:18px;vertical-align:middle}
 .alarm-btn .alarm-label{white-space:nowrap}
+
+.alarm-wrap{position:relative;display:flex;align-items:center;gap:0}
+.alarm-thresh-btn{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-left:none;padding:5px 10px;border-radius:0 20px 20px 0;cursor:pointer;font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;font-weight:600;transition:all .2s;letter-spacing:.3px}
+.alarm-thresh-btn:hover{color:var(--text);background:var(--subtle-hover)}
+.alarm-btn{border-radius:20px 0 0 20px !important}
+
+.thresh-picker{position:absolute;top:calc(100% + 8px);right:0;z-index:2000;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:200px;box-shadow:0 8px 32px rgba(0,0,0,.35);opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .2s cubic-bezier(.4,0,.2,1)}
+.thresh-picker.open{opacity:1;transform:translateY(0);pointer-events:auto}
+.thresh-picker-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px}
+.thresh-options{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.thresh-opt{padding:7px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;text-align:center;transition:all .15s;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--muted);line-height:1.3}
+.thresh-opt:hover{border-color:var(--accent);color:var(--text);background:var(--subtle-hover)}
+.thresh-opt.active{border-color:var(--accent);background:rgba(59,130,246,.15);color:var(--accent)}
+.thresh-opt .thresh-idx{font-size:13px;font-weight:700;display:block}
+.thresh-opt .thresh-lbl{font-size:7px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);display:block;margin-top:2px}
 @keyframes alarm-flash{0%,100%{opacity:1}50%{opacity:.3}}
 .alarm-active{animation:alarm-flash .6s ease-in-out infinite}
 
@@ -261,6 +277,7 @@ header{
   .clock{font-size:10px}
   .about-link{font-size:10px;padding:4px 10px}
   .alarm-btn{padding:4px 8px;font-size:10px}
+  .alarm-thresh-btn{padding:4px 7px;font-size:9px}
   .theme-toggle{width:28px;height:28px}
   .theme-toggle svg{width:15px;height:15px}
   .tour-help-btn{width:28px;height:28px;font-size:13px}
@@ -351,6 +368,7 @@ header{
   .hstatus{gap:5px}
   .chip{padding:3px 7px;font-size:9px}
   .alarm-btn{padding:3px 6px;font-size:9px}
+  .alarm-thresh-btn{padding:3px 5px;font-size:8px}
   .theme-toggle{width:24px;height:24px}
   .theme-toggle svg{width:13px;height:13px}
   .tour-help-btn{width:24px;height:24px;font-size:11px}
@@ -416,10 +434,19 @@ header{
           <path class="theme-toggle__within__inner" d="M16 9.5c-3.6 0-6.4 2.9-6.4 6.4s2.8 6.5 6.4 6.5 6.4-2.9 6.4-6.4-2.8-6.5-6.4-6.5z"/>
         </svg>
       </button>
-      <button class="alarm-btn" id="alarmBtn" onclick="toggleAlarm()" title="Toggle heat alarm">
-        <img class="alarm-icon" id="alarmIcon" src="bell_icon.png" alt="alarm bell" style="width:18px;height:18px;filter:grayscale(1) brightness(1.5)">
-        <span class="alarm-label" id="alarmLabel">Alarm Off</span>
-      </button>
+      <div class="alarm-wrap" id="alarmWrap">
+        <button class="alarm-btn" id="alarmBtn" onclick="toggleAlarm()" title="Toggle heat alarm">
+          <img class="alarm-icon" id="alarmIcon" src="bell_icon.png" alt="alarm bell" style="width:18px;height:18px;filter:grayscale(1) brightness(1.5)">
+          <span class="alarm-label" id="alarmLabel">Alarm Off</span>
+        </button>
+        <button class="alarm-thresh-btn" id="alarmThreshBtn" onclick="toggleThreshPicker(event)" title="Set alarm threshold">
+          <span id="alarmThreshVal">≥ 4.0</span>
+        </button>
+        <div class="thresh-picker" id="threshPicker">
+          <div class="thresh-picker-title">Trigger alarm at:</div>
+          <div class="thresh-options" id="threshOptions"></div>
+        </div>
+      </div>
       <div class="chip"><span class="live-dot" id="cDot"></span><span id="cStat">Initializing&#8230;</span></div>
       <div class="clock" id="clock"></div>
       <a href="about/about.html" class="about-link" title="About the developer">About</a>
@@ -1424,10 +1451,65 @@ function closeChart() {
 //  Plays warning-signal.mp3 when worst municipal index
 //  reaches the alarm threshold. User can toggle on/off.
 // ============================================================
-const ALARM_THRESHOLD = 4.0;   // trigger at Dangerous (4.0) and above
+const ALARM_THRESHOLD_OPTIONS = [
+  {val:1.5, label:'Minimal'},
+  {val:2.0, label:'Low'},
+  {val:2.5, label:'Moderate'},
+  {val:3.0, label:'High'},
+  {val:3.5, label:'V.High'},
+  {val:4.0, label:'Danger'},
+  {val:4.5, label:'Extreme'},
+  {val:5.0, label:'Max'}
+];
+let alarmThreshold = parseFloat(localStorage.getItem('heatguard-alarm-thresh')) || 4.0;
 let alarmArmed    = false;
 let alarmPlaying  = false;
 let alarmAudio    = null;
+
+// Build threshold picker options
+(function buildThreshOptions() {
+  const container = document.getElementById('threshOptions');
+  if (!container) return;
+  container.innerHTML = ALARM_THRESHOLD_OPTIONS.map(o =>
+    `<div class="thresh-opt${o.val === alarmThreshold ? ' active' : ''}" data-val="${o.val}" onclick="setAlarmThreshold(${o.val})">
+      <span class="thresh-idx">${o.val.toFixed(1)}</span>
+      <span class="thresh-lbl">${o.label}</span>
+    </div>`
+  ).join('');
+  document.getElementById('alarmThreshVal').textContent = '≥ ' + alarmThreshold.toFixed(1);
+})();
+
+function toggleThreshPicker(e) {
+  e.stopPropagation();
+  document.getElementById('threshPicker').classList.toggle('open');
+}
+
+function setAlarmThreshold(val) {
+  alarmThreshold = val;
+  localStorage.setItem('heatguard-alarm-thresh', val);
+  document.getElementById('alarmThreshVal').textContent = '≥ ' + val.toFixed(1);
+  // Update active state in picker
+  document.querySelectorAll('.thresh-opt').forEach(el => {
+    el.classList.toggle('active', parseFloat(el.dataset.val) === val);
+  });
+  document.getElementById('threshPicker').classList.remove('open');
+  // If alarm is armed and currently playing but new threshold is higher, stop
+  if (alarmArmed && alarmPlaying) {
+    // Re-evaluate with latest data
+    stopAlarm();
+    document.getElementById('alarmBtn').classList.remove('alarm-active');
+    document.getElementById('alarmLabel').textContent = 'Alarm On';
+  }
+}
+
+// Close picker when clicking outside
+document.addEventListener('click', function(e) {
+  const picker = document.getElementById('threshPicker');
+  const wrap = document.getElementById('alarmWrap');
+  if (picker && picker.classList.contains('open') && !wrap.contains(e.target)) {
+    picker.classList.remove('open');
+  }
+});
 
 // ============================================================
 //  SIDEBAR COLLAPSE / EXPAND
@@ -1532,7 +1614,7 @@ function toggleAlarm() {
 
 function triggerAlarm(worstIndex, worstLabel) {
   if (!alarmArmed || alarmPlaying) return;
-  if (worstIndex < ALARM_THRESHOLD) {
+  if (worstIndex < alarmThreshold) {
     stopAlarm();
     return;
   }
@@ -1644,9 +1726,9 @@ const TOUR_STEPS = [
     pos: 'bottom-left'
   },
   {
-    target: 'alarmBtn',
+    target: 'alarmWrap',
     title: 'Heat Alarm',
-    desc: 'Turn this on to get an audio alert when any barangay reaches "Dangerous" level (index 4.0 or above). An alarm sound will play when the threshold is exceeded.',
+    desc: 'Toggle the alarm on/off and set your own trigger threshold using the ≥ button. When any barangay reaches your chosen level, an audio alert will sound. Your setting is saved automatically.',
     pos: 'bottom-left'
   },
   {
