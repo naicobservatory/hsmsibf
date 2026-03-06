@@ -165,26 +165,6 @@ header{
 .db-status.ok{background:var(--green-bg);border-color:rgba(34,197,94,.3);color:var(--green)}
 .db-status.warn{background:var(--yellow-bg);border-color:rgba(250,204,21,.3);color:var(--yellow)}
 
-/* === MAP DATA OVERLAY (live station readings on map) === */
-.map-data-label{font-family:'JetBrains Mono',monospace;pointer-events:none;white-space:nowrap}
-.mdl-temp{font-size:20px;font-weight:900;color:#fff;text-shadow:0 1.5px 5px rgba(0,0,0,.75),0 0 2px rgba(0,0,0,.5);line-height:1;letter-spacing:-.5px}
-.mdl-temp sup{font-size:10px;font-weight:700;vertical-align:super}
-.mdl-sub{font-size:8px;font-weight:600;color:rgba(255,255,255,.8);text-shadow:0 1px 3px rgba(0,0,0,.7);line-height:1;margin-top:1px;letter-spacing:.3px}
-.mdl-wind{display:flex;align-items:center;gap:1px;margin-top:2px}
-.mdl-wind-arrow{width:22px;height:22px;transition:transform .3s;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));transform-origin:center center}
-.mdl-wind-spd{font-size:9px;font-weight:700;color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(0,0,0,.7)}
-
-.mdl-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border-radius:6px;padding:3px 7px;font-size:9px;font-weight:600;color:#fff;line-height:1;margin-top:3px;white-space:nowrap}
-.mdl-badge .mdl-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-
-[data-theme="light"] .mdl-temp{color:#1a1f2e;text-shadow:0 1px 3px rgba(255,255,255,.8),0 0 1px rgba(255,255,255,.5)}
-[data-theme="light"] .mdl-sub{color:rgba(26,31,46,.7);text-shadow:0 1px 2px rgba(255,255,255,.6)}
-[data-theme="light"] .mdl-wind-spd{color:rgba(26,31,46,.7);text-shadow:0 1px 2px rgba(255,255,255,.6)}
-[data-theme="light"] .mdl-badge{background:rgba(255,255,255,.7)}
-[data-theme="light"] .mdl-badge{color:#1a1f2e}
-[data-theme="light"] .mdl-wind-spd{color:rgba(26,31,46,.7);text-shadow:0 1px 2px rgba(255,255,255,.6)}
-[data-theme="light"] .mdl-wind-arrow{filter:drop-shadow(0 1px 2px rgba(255,255,255,.5))}
-
 /* === MAP === */
 .mapc{position:relative;overflow:hidden}
 #map{width:100%;height:100%;background:var(--map-bg)}
@@ -268,27 +248,6 @@ header{
 .bar-bg{height:5px;background:var(--subtle-hover);border-radius:3px;overflow:hidden}
 .bar-fill{height:100%;border-radius:3px;transition:width .55s cubic-bezier(.4,0,.2,1)}
 
-/* === STATION DISPLAY CONTROL (click-expandable, slides left) === */
-.station-ctrl{background:transparent!important;border:none!important;overflow:visible;font-family:'DM Sans',sans-serif;display:flex;justify-content:flex-end}
-.station-ctrl .sc-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;cursor:pointer;background:var(--card);border:1px solid var(--border);border-radius:8px;flex-shrink:0;z-index:2}
-.station-ctrl .sc-icon svg{width:18px;height:18px;fill:var(--muted);transition:fill .15s}
-.station-ctrl .sc-icon:hover svg{fill:var(--text)}
-.station-ctrl .sc-panel{position:absolute;right:0;top:0;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:180px;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;transform:translateX(10px);pointer-events:none;transition:all .2s cubic-bezier(.4,0,.2,1);z-index:1}
-.station-ctrl.open .sc-panel{opacity:1;transform:translateX(0);pointer-events:auto}
-.station-ctrl.open .sc-icon{border-color:var(--accent)}
-.station-ctrl.open .sc-icon svg{fill:var(--accent)}
-.sc-header{display:flex;align-items:center;gap:8px;padding:8px 12px;user-select:none;border-bottom:1px solid var(--border)}
-.sc-header input[type="checkbox"]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;flex-shrink:0}
-.sc-title{font-size:11px;font-weight:600;color:var(--text);flex:1}
-.sc-body{display:flex;flex-direction:column}
-.sc-opt{display:flex;align-items:center;gap:8px;padding:7px 12px 7px 16px;cursor:pointer;font-size:11px;color:var(--muted);transition:all .15s;border-left:3px solid transparent;user-select:none}
-.sc-opt:hover{background:var(--subtle-hover);color:var(--text)}
-.sc-opt.active{background:rgba(59,130,246,.08);color:var(--accent);border-left-color:var(--accent)}
-.sc-opt input[type="radio"]{display:none}
-.sc-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;position:relative;transition:all .15s}
-.sc-opt.active .sc-dot{border-color:var(--accent)}
-.sc-opt.active .sc-dot::after{content:'';position:absolute;inset:2px;border-radius:50%;background:var(--accent)}
-
 /* Leaflet layer control override */
 .leaflet-control-layers{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:8px!important}
 .leaflet-control-layers label{color:var(--muted)!important;font-size:12px!important}
@@ -367,15 +326,7 @@ header{
   .osl{font-size:7.5px}
   .odiv{height:20px}
   .map-logo{width:50px;height:50px;bottom:25px;right:10px}
-  .mdl-temp{font-size:15px}
-  .mdl-sub{font-size:7px}
-  .mdl-wind-arrow{width:18px;height:18px}
-  .mdl-wind-spd{font-size:8px}
   .map-legend{bottom:10px;left:10px;padding:6px 8px;border-radius:8px}
-  .station-ctrl .sc-panel{min-width:150px}
-  .sc-header{padding:6px 10px}
-  .sc-title{font-size:10px}
-  .sc-opt{padding:5px 10px 5px 14px;font-size:10px}
   .click-hint{font-size:9px;padding:4px 10px;bottom:10px}
 
   /* --- DETAIL PANEL becomes full-width overlay --- */
@@ -910,48 +861,8 @@ const stationIcon = L.icon({
   popupAnchor: [0, -13]
 });
 const stationMarker = L.marker([14.3249402, 120.8086893], { icon: stationIcon, zIndexOffset: 1000 })
+  .addTo(map)
   .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>PPW Weather Station</b><br><span style="font-size:11px;color:#666">14.3249°N, 120.8087°E</span></div>');
-
-// ── Map Data Labels (live readings on map) ─────────────────
-const STATION_POS = [14.3249402, 120.8086893];  // PPW station
-
-let mapDataLabel = null;
-let mapWindLabel = null;
-let mapExtraLabel = null;
-
-// Layer group that holds station marker + all data labels
-const stationDataGroup = L.layerGroup([stationMarker]).addTo(map);
-
-function createMapDataLabels() {
-  // Main temperature label (offset northeast of station)
-  const tempIcon = L.divIcon({
-    className: 'map-data-label',
-    html: '<div class="mdl-temp" id="mdlTemp">--°</div>',
-    iconAnchor: [-14, 22]
-  });
-  mapDataLabel = L.marker(STATION_POS, { icon: tempIcon, zIndexOffset: 900, interactive: false });
-  stationDataGroup.addLayer(mapDataLabel);
-
-  // Extra readings (HI, WBGT, Humidity) — below temperature
-  const extraIcon = L.divIcon({
-    className: 'map-data-label',
-    html: '<div id="mdlExtra"><div class="mdl-sub" id="mdlHI"></div><div class="mdl-sub" id="mdlWBGT"></div><div class="mdl-sub" id="mdlHum"></div></div>',
-    iconAnchor: [-14, -2]
-  });
-  mapExtraLabel = L.marker(STATION_POS, { icon: extraIcon, zIndexOffset: 899, interactive: false });
-  stationDataGroup.addLayer(mapExtraLabel);
-
-  // Wind arrow + speed (uses windsvg.svg from repo)
-  const windIcon = L.divIcon({
-    className: 'map-data-label',
-    html: '<div class="mdl-wind" id="mdlWind" style="display:none">' +
-          '<img class="mdl-wind-arrow" id="mdlWindArrow" src="windsvg.svg" alt="wind">' +
-          '<span class="mdl-wind-spd" id="mdlWindSpd"></span></div>',
-    iconAnchor: [-14, -18]
-  });
-  mapWindLabel = L.marker(STATION_POS, { icon: windIcon, zIndexOffset: 898, interactive: false });
-  stationDataGroup.addLayer(mapWindLabel);
-}
 
 // Layer control — basemaps only
 L.control.layers(
@@ -959,186 +870,6 @@ L.control.layers(
   null,
   {position:'topright'}
 ).addTo(map);
-
-// ── Custom Station Display Control ──────────────────────────
-const StationControl = L.Control.extend({
-  options: { position: 'topright' },
-  onAdd: function() {
-    const container = L.DomUtil.create('div', 'station-ctrl leaflet-bar');
-    container.id = 'stationCtrl';
-    container.innerHTML =
-      '<div class="sc-icon" onclick="toggleStationCtrl(event)" title="Weather Station">' +
-        '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a3 3 0 0 1 3 3v1h1a2 2 0 0 1 2 2v1a5 5 0 0 1-2.5 4.33V15h-1v5h1v2H8.5v-2h1v-5h-1v-1.67A5 5 0 0 1 6 9V8a2 2 0 0 1 2-2h1V5a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v1h2V5a1 1 0 0 0-1-1z"/></svg>' +
-      '</div>' +
-      '<div class="sc-panel">' +
-        '<div class="sc-header">' +
-          '<input type="checkbox" id="scToggle" checked onclick="toggleStationLayer(event)">' +
-          '<span class="sc-title">Weather Station</span>' +
-        '</div>' +
-        '<div class="sc-body">' +
-          '<label class="sc-opt active" data-mode="temp"><input type="radio" name="stationMode" value="temp" checked><span class="sc-dot"></span>Temperature</label>' +
-          '<label class="sc-opt" data-mode="rh"><input type="radio" name="stationMode" value="rh"><span class="sc-dot"></span>Relative Humidity</label>' +
-          '<label class="sc-opt" data-mode="wind"><input type="radio" name="stationMode" value="wind"><span class="sc-dot"></span>Winds</label>' +
-          '<label class="sc-opt" data-mode="wbgt"><input type="radio" name="stationMode" value="wbgt"><span class="sc-dot"></span>WBGT</label>' +
-        '</div>' +
-      '</div>';
-    L.DomEvent.disableClickPropagation(container);
-    L.DomEvent.disableScrollPropagation(container);
-    return container;
-  }
-});
-new StationControl().addTo(map);
-
-let stationDisplayMode = 'temp';
-let stationVisible = true;
-
-function toggleStationCtrl(e) {
-  e.stopPropagation();
-  document.getElementById('stationCtrl').classList.toggle('open');
-}
-
-// Close station panel when clicking elsewhere on the map
-map.on('click', function() {
-  document.getElementById('stationCtrl')?.classList.remove('open');
-});
-
-function toggleStationLayer(e) {
-  e.stopPropagation();
-  stationVisible = e.target.checked;
-  if (stationVisible) {
-    map.addLayer(stationDataGroup);
-    setTimeout(function() { refreshMapDisplay(); }, 50);
-  } else {
-    map.removeLayer(stationDataGroup);
-  }
-}
-
-function setStationMode(mode) {
-  stationDisplayMode = mode;
-  document.querySelectorAll('.sc-opt').forEach(function(el) {
-    el.classList.toggle('active', el.dataset.mode === mode);
-  });
-  refreshMapDisplay();
-}
-
-// Attach radio change handlers
-document.addEventListener('change', function(e) {
-  if (e.target.name === 'stationMode') setStationMode(e.target.value);
-});
-
-function getTempColor(temp) {
-  if (temp >= 42) return '#dc2626';     // extreme red
-  if (temp >= 38) return '#ef4444';     // red
-  if (temp >= 34) return '#f97316';     // orange
-  if (temp >= 30) return '#eab308';     // yellow
-  if (temp >= 26) return '#22c55e';     // green
-  return '#3b82f6';                      // blue/cool
-}
-
-function updateMapDataLabels(temp, hi, wbgt, hum, windSpd, windDir) {
-  if (!mapDataLabel) createMapDataLabels();
-
-  // Cache latest values
-  lastMapData = { temp:temp, hi:hi, wbgt:wbgt, hum:hum, windSpd:windSpd, windDir:windDir };
-
-  refreshMapDisplay();
-}
-
-function refreshMapDisplay() {
-  const d = lastMapData;
-  const mode = stationDisplayMode;
-
-  const tdEl   = document.getElementById('mdlTemp');
-  const extraC = document.getElementById('mdlExtra');
-  const windC  = document.getElementById('mdlWind');
-
-  // Hide all sub-elements first
-  if (extraC) extraC.style.display = 'none';
-  if (windC)  windC.style.display  = 'none';
-
-  if (mode === 'temp') {
-    // Show temperature with color + HI below
-    const tColor = getTempColor(d.temp);
-    if (tdEl) tdEl.innerHTML = '<span style="color:' + tColor + '">' + d.temp.toFixed(1) + '°</span>';
-    if (extraC) {
-      extraC.style.display = 'block';
-      document.getElementById('mdlHI').textContent   = 'HI ' + d.hi.toFixed(1) + '°';
-      document.getElementById('mdlWBGT').textContent  = '';
-      document.getElementById('mdlHum').textContent   = '';
-    }
-
-  } else if (mode === 'rh') {
-    // Show humidity as main, temp as sub
-    if (tdEl) tdEl.innerHTML = '<span style="color:#22c55e">' + Math.round(d.hum) + '%</span>';
-    if (extraC) {
-      extraC.style.display = 'block';
-      document.getElementById('mdlHI').textContent   = 'Temp ' + d.temp.toFixed(1) + '°';
-      document.getElementById('mdlWBGT').textContent  = '';
-      document.getElementById('mdlHum').textContent   = '';
-    }
-
-  } else if (mode === 'wind') {
-    // Show wind speed as main + colored arrow from windsvg.svg
-    if (d.windSpd !== null && !isNaN(d.windSpd)) {
-      var wColor = getWindColor(d.windSpd);
-      if (tdEl) tdEl.innerHTML = '<span style="color:' + wColor + '">' + d.windSpd.toFixed(0) + '</span><span style="font-size:10px;color:var(--dim)"> km/h</span>';
-      if (windC) {
-        windC.style.display = 'flex';
-        var arrow = document.getElementById('mdlWindArrow');
-        // Recolor arrow via SVG data URI with dynamic fill
-        if (arrow) {
-          var svgStr = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1500"><path d="M799.8 1278.3c-1.9 0-3.1 0-5 0-17.3-2.5-30.3-16.1-32.2-32.8-9.9-89.2-16.1-164.7-21.7-225.4-13-156-19.2-234-58.8-273.7-39.6-39.6-117.7-45.8-273.7-58.8-60.7-5.6-136.2-11.8-225.4-21.7-16.7-1.9-30.3-14.9-32.8-32.2-1.9-17.3 8-33.4 24.1-39.6L1156.5 224.4c13.6-5.6 29.1-1.9 39.6 8 9.9 10.5 13.6 26 8 39.6L834.5 1254.1c-5.6 14.9-19.2 24.2-34.7 24.2z" fill="' + wColor + '" fill-rule="evenodd"/></svg>';
-          arrow.src = 'data:image/svg+xml;base64,' + btoa(svgStr);
-          // SVG default points upper-right (~315°), rotate so 0°=North
-          // windDir is "from" direction, +180 = "to" direction
-          if (d.windDir !== null) {
-            arrow.style.transform = 'rotate(' + ((d.windDir + 180) % 360) + 'deg)';
-          }
-        }
-        document.getElementById('mdlWindSpd').textContent = degToCompass(d.windDir);
-      }
-    } else {
-      if (tdEl) tdEl.innerHTML = '<span style="color:var(--dim)">N/A</span>';
-    }
-
-  } else if (mode === 'wbgt') {
-    // Show WBGT as main, temp as sub
-    const wColor = getWbgtColor(d.wbgt);
-    if (tdEl) tdEl.innerHTML = '<span style="color:' + wColor + '">' + d.wbgt.toFixed(1) + '°</span>';
-    if (extraC) {
-      extraC.style.display = 'block';
-      document.getElementById('mdlHI').textContent   = 'WBGT';
-      document.getElementById('mdlWBGT').textContent  = '';
-      document.getElementById('mdlHum').textContent   = '';
-    }
-  }
-}
-
-function degToCompass(deg) {
-  var dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-  return dirs[Math.round(deg / 22.5) % 16];
-}
-
-function getWbgtColor(wbgt) {
-  if (wbgt >= 33) return '#dc2626';
-  if (wbgt >= 30) return '#ef4444';
-  if (wbgt >= 28) return '#f97316';
-  if (wbgt >= 25) return '#eab308';
-  return '#22c55e';
-}
-
-function getWindColor(spdKmh) {
-  if (spdKmh >= 90) return '#a855f7';    // violent — purple
-  if (spdKmh >= 62) return '#dc2626';    // storm — red
-  if (spdKmh >= 40) return '#ef4444';    // strong — light red
-  if (spdKmh >= 25) return '#f97316';    // moderate-strong — orange
-  if (spdKmh >= 12) return '#eab308';    // moderate — yellow
-  if (spdKmh >= 5)  return '#22c55e';    // light — green
-  return '#60a5fa';                       // calm — blue
-}
-
-createMapDataLabels();
-let lastMapData = { temp:0, hi:0, wbgt:0, hum:0, windSpd:null, windDir:null };
 
 let mapFirstRender = true;
 let defaultBounds = null;
@@ -1522,25 +1253,13 @@ async function fetchLive() {
     const avgCutoff = now - AVG_WINDOW_MINS * 60 * 1000;
     const recent    = sorted.filter(r => new Date(r.timestamp).getTime() >= avgCutoff);
 
-    let displayHI, displayWBGT, displayTemp, displayHum, displayWindSpd, displayWindDir, avgLabel;
+    let displayHI, displayWBGT, displayTemp, displayHum, avgLabel;
 
     if (recent.length > 0) {
       displayHI   = recent.reduce((s, r) => s + parseFloat(r.hi_c),   0) / recent.length;
       displayWBGT = recent.reduce((s, r) => s + parseFloat(r.wbgt_c), 0) / recent.length;
       displayTemp = recent.reduce((s, r) => s + parseFloat(r.temp_c), 0) / recent.length;
       displayHum  = recent.reduce((s, r) => s + parseFloat(r.rh),     0) / recent.length;
-      // Wind (optional fields — graceful if missing)
-      const windRecords = recent.filter(r => r.wind_speed != null && r.wind_speed !== '' && r.wind_dir != null && r.wind_dir !== '' && !isNaN(parseFloat(r.wind_speed)));
-      if (windRecords.length > 0) {
-        displayWindSpd = windRecords.reduce((s, r) => s + parseFloat(r.wind_speed), 0) / windRecords.length;
-        // Average wind direction using vector mean
-        const sinSum = windRecords.reduce((s, r) => s + Math.sin(parseFloat(r.wind_dir) * Math.PI / 180), 0);
-        const cosSum = windRecords.reduce((s, r) => s + Math.cos(parseFloat(r.wind_dir) * Math.PI / 180), 0);
-        displayWindDir = ((Math.atan2(sinSum, cosSum) * 180 / Math.PI) + 360) % 360;
-      } else {
-        displayWindSpd = null;
-        displayWindDir = null;
-      }
       avgLabel    = ' · ' + AVG_WINDOW_MINS + '-min avg (' + recent.length + ' readings)';
       console.log('[HeatGuard] ' + AVG_WINDOW_MINS + '-min avg (' + recent.length + ' pts): HI ' +
                   displayHI.toFixed(1) + '°C | WBGT ' + displayWBGT.toFixed(1) +
@@ -1551,8 +1270,6 @@ async function fetchLive() {
       displayWBGT = latestWBGT;
       displayTemp = latestTempC;
       displayHum  = latestHum;
-      displayWindSpd = (latest.wind_speed != null && latest.wind_speed !== '' && !isNaN(parseFloat(latest.wind_speed))) ? parseFloat(latest.wind_speed) : null;
-      displayWindDir = (latest.wind_dir != null && latest.wind_dir !== '' && !isNaN(parseFloat(latest.wind_dir))) ? parseFloat(latest.wind_dir) : null;
       avgLabel    = ' · latest (' + pool.length + ' in pool)';
       console.log('[HeatGuard] No data in last ' + AVG_WINDOW_MINS + ' min — using latest reading');
     }
@@ -1568,12 +1285,6 @@ async function fetchLive() {
     stat.textContent = 'Live ' + fullDate + ' (' + dayName + ')';
 
     applyLive(displayHI, displayWBGT, displayTemp, displayHum);
-
-    // Map data labels use LATEST single reading (not rolling average)
-    const latestWindSpd = (latest.wind_speed != null && latest.wind_speed !== '' && !isNaN(parseFloat(latest.wind_speed))) ? parseFloat(latest.wind_speed) : null;
-    const latestWindDir = (latest.wind_dir != null && latest.wind_dir !== '' && !isNaN(parseFloat(latest.wind_dir))) ? parseFloat(latest.wind_dir) : null;
-    updateMapDataLabels(latestTempC, latestHI, latestWBGT, latestHum, latestWindSpd, latestWindDir);
-
     document.getElementById('loadOv').classList.add('gone');
     maybeStartTour();
 
@@ -2066,7 +1777,7 @@ const TOUR_STEPS = [
   {
     target: '#map',
     title: 'Interactive Map',
-    desc: 'Each barangay is color-coded by heat risk level. Hover to highlight, click to open the detail panel. Use the "Weather Station" panel (top-right) to toggle live data on/off and switch between Temperature, Humidity, Winds, and WBGT views.',
+    desc: 'Each barangay is color-coded by heat risk level. Hover to highlight, click to open the detail panel. You can zoom, pan, and switch between Dark, Light, Streets, Satellite, and Topo basemaps using the layer control (top-right).',
     pos: 'center'
   },
   {
