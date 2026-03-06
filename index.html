@@ -1568,7 +1568,12 @@ async function fetchLive() {
     stat.textContent = 'Live ' + fullDate + ' (' + dayName + ')';
 
     applyLive(displayHI, displayWBGT, displayTemp, displayHum);
-    updateMapDataLabels(displayTemp, displayHI, displayWBGT, displayHum, displayWindSpd, displayWindDir);
+
+    // Map data labels use LATEST single reading (not rolling average)
+    const latestWindSpd = (latest.wind_speed != null && latest.wind_speed !== '' && !isNaN(parseFloat(latest.wind_speed))) ? parseFloat(latest.wind_speed) : null;
+    const latestWindDir = (latest.wind_dir != null && latest.wind_dir !== '' && !isNaN(parseFloat(latest.wind_dir))) ? parseFloat(latest.wind_dir) : null;
+    updateMapDataLabels(latestTempC, latestHI, latestWBGT, latestHum, latestWindSpd, latestWindDir);
+
     document.getElementById('loadOv').classList.add('gone');
     maybeStartTour();
 
