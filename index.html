@@ -165,6 +165,25 @@ header{
 .db-status.ok{background:var(--green-bg);border-color:rgba(34,197,94,.3);color:var(--green)}
 .db-status.warn{background:var(--yellow-bg);border-color:rgba(250,204,21,.3);color:var(--yellow)}
 
+/* === MAP DATA OVERLAY (live station readings on map) === */
+.map-data-label{font-family:'JetBrains Mono',monospace;pointer-events:none;white-space:nowrap}
+.mdl-temp{font-size:20px;font-weight:900;color:#fff;text-shadow:0 1.5px 5px rgba(0,0,0,.75),0 0 2px rgba(0,0,0,.5);line-height:1;letter-spacing:-.5px}
+.mdl-temp sup{font-size:10px;font-weight:700;vertical-align:super}
+.mdl-sub{font-size:8px;font-weight:600;color:rgba(255,255,255,.8);text-shadow:0 1px 3px rgba(0,0,0,.7);line-height:1;margin-top:1px;letter-spacing:.3px}
+.mdl-wind{display:flex;align-items:center;gap:3px;margin-top:2px}
+.mdl-wind-arrow{width:16px;height:16px;transition:transform .3s}
+.mdl-wind-spd{font-size:9px;font-weight:700;color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(0,0,0,.7)}
+
+.mdl-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border-radius:6px;padding:3px 7px;font-size:9px;font-weight:600;color:#fff;line-height:1;margin-top:3px;white-space:nowrap}
+.mdl-badge .mdl-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+
+[data-theme="light"] .mdl-temp{color:#1a1f2e;text-shadow:0 1px 3px rgba(255,255,255,.8),0 0 1px rgba(255,255,255,.5)}
+[data-theme="light"] .mdl-sub{color:rgba(26,31,46,.7);text-shadow:0 1px 2px rgba(255,255,255,.6)}
+[data-theme="light"] .mdl-wind-spd{color:rgba(26,31,46,.7);text-shadow:0 1px 2px rgba(255,255,255,.6)}
+[data-theme="light"] .mdl-badge{background:rgba(255,255,255,.7)}
+[data-theme="light"] .mdl-badge{color:#1a1f2e}
+[data-theme="light"] .mdl-wind-arrow path{fill:rgba(26,31,46,.7);stroke:rgba(255,255,255,.5)}
+
 /* === MAP === */
 .mapc{position:relative;overflow:hidden}
 #map{width:100%;height:100%;background:var(--map-bg)}
@@ -325,6 +344,10 @@ header{
   .osl{font-size:7.5px}
   .odiv{height:20px}
   .map-logo{width:50px;height:50px;bottom:25px;right:10px}
+  .mdl-temp{font-size:15px}
+  .mdl-sub{font-size:7px}
+  .mdl-wind-arrow{width:13px;height:13px}
+  .mdl-wind-spd{font-size:8px}
   .map-legend{bottom:10px;left:10px;padding:6px 8px;border-radius:8px}
   .click-hint{font-size:9px;padding:4px 10px;bottom:10px}
 
@@ -867,6 +890,85 @@ const stationMarker2 = L.marker([14.322429755684219, 120.7718108314786], { icon:
   .addTo(map)
   .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>Naic DRRMO AWS</b><br><span style="font-size:11px;color:#666">14.3224°N, 120.7718°E</span></div>');
 
+// ── Map Data Labels (live readings on map) ─────────────────
+const STATION_POS = [14.3249402, 120.8086893];  // PPW station
+
+let mapDataLabel = null;
+let mapWindLabel = null;
+let mapExtraLabel = null;
+
+function createMapDataLabels() {
+  // Main temperature label (offset northeast of station)
+  const tempIcon = L.divIcon({
+    className: 'map-data-label',
+    html: '<div class="mdl-temp" id="mdlTemp">--°</div>',
+    iconAnchor: [-14, 22]
+  });
+  mapDataLabel = L.marker(STATION_POS, { icon: tempIcon, zIndexOffset: 900, interactive: false }).addTo(map);
+
+  // Extra readings (HI, WBGT, Humidity) — below temperature
+  const extraIcon = L.divIcon({
+    className: 'map-data-label',
+    html: '<div id="mdlExtra"><div class="mdl-sub" id="mdlHI"></div><div class="mdl-sub" id="mdlWBGT"></div><div class="mdl-sub" id="mdlHum"></div></div>',
+    iconAnchor: [-14, -2]
+  });
+  mapExtraLabel = L.marker(STATION_POS, { icon: extraIcon, zIndexOffset: 899, interactive: false }).addTo(map);
+
+  // Wind arrow + speed
+  const windIcon = L.divIcon({
+    className: 'map-data-label',
+    html: '<div class="mdl-wind" id="mdlWind" style="display:none">' +
+          '<svg class="mdl-wind-arrow" id="mdlWindArrow" viewBox="0 0 24 24" fill="none"><path d="M12 2 L18 14 L12 10 L6 14 Z" fill="rgba(255,255,255,.9)" stroke="rgba(0,0,0,.4)" stroke-width="1"/></svg>' +
+          '<span class="mdl-wind-spd" id="mdlWindSpd"></span></div>',
+    iconAnchor: [-14, -24]
+  });
+  mapWindLabel = L.marker(STATION_POS, { icon: windIcon, zIndexOffset: 898, interactive: false }).addTo(map);
+}
+
+function getTempColor(temp) {
+  if (temp >= 42) return '#dc2626';     // extreme red
+  if (temp >= 38) return '#ef4444';     // red
+  if (temp >= 34) return '#f97316';     // orange
+  if (temp >= 30) return '#eab308';     // yellow
+  if (temp >= 26) return '#22c55e';     // green
+  return '#3b82f6';                      // blue/cool
+}
+
+function updateMapDataLabels(temp, hi, wbgt, hum, windSpd, windDir) {
+  if (!mapDataLabel) createMapDataLabels();
+
+  // Temperature with color
+  const tColor = getTempColor(temp);
+  const tdEl = document.getElementById('mdlTemp');
+  if (tdEl) {
+    tdEl.innerHTML = '<span style="color:' + tColor + '">' + temp.toFixed(0) + '°</span>';
+  }
+
+  // Extra readings
+  const hiEl = document.getElementById('mdlHI');
+  const wEl  = document.getElementById('mdlWBGT');
+  const hEl  = document.getElementById('mdlHum');
+  if (hiEl)  hiEl.textContent  = 'HI ' + hi.toFixed(1) + '°';
+  if (wEl)   wEl.textContent   = 'WBGT ' + wbgt.toFixed(1) + '°';
+  if (hEl)   hEl.textContent   = 'RH ' + Math.round(hum) + '%';
+
+  // Wind (only show if data exists)
+  const windDiv = document.getElementById('mdlWind');
+  const arrow   = document.getElementById('mdlWindArrow');
+  const spdEl   = document.getElementById('mdlWindSpd');
+  if (windSpd !== null && windDir !== null && !isNaN(windSpd) && !isNaN(windDir)) {
+    if (windDiv) windDiv.style.display = 'flex';
+    // Arrow points in wind direction (meteorological: direction wind comes FROM,
+    // so rotate 180° to show where wind blows TO)
+    if (arrow) arrow.style.transform = 'rotate(' + ((windDir + 180) % 360) + 'deg)';
+    if (spdEl) spdEl.textContent = windSpd.toFixed(0) + ' km/h';
+  } else {
+    if (windDiv) windDiv.style.display = 'none';
+  }
+}
+
+createMapDataLabels();
+
 let mapFirstRender = true;
 let defaultBounds = null;
 
@@ -1249,13 +1351,25 @@ async function fetchLive() {
     const avgCutoff = now - AVG_WINDOW_MINS * 60 * 1000;
     const recent    = sorted.filter(r => new Date(r.timestamp).getTime() >= avgCutoff);
 
-    let displayHI, displayWBGT, displayTemp, displayHum, avgLabel;
+    let displayHI, displayWBGT, displayTemp, displayHum, displayWindSpd, displayWindDir, avgLabel;
 
     if (recent.length > 0) {
       displayHI   = recent.reduce((s, r) => s + parseFloat(r.hi_c),   0) / recent.length;
       displayWBGT = recent.reduce((s, r) => s + parseFloat(r.wbgt_c), 0) / recent.length;
       displayTemp = recent.reduce((s, r) => s + parseFloat(r.temp_c), 0) / recent.length;
       displayHum  = recent.reduce((s, r) => s + parseFloat(r.rh),     0) / recent.length;
+      // Wind (optional fields — graceful if missing)
+      const windRecords = recent.filter(r => r.wind_speed != null && r.wind_speed !== '' && r.wind_dir != null && r.wind_dir !== '' && !isNaN(parseFloat(r.wind_speed)));
+      if (windRecords.length > 0) {
+        displayWindSpd = windRecords.reduce((s, r) => s + parseFloat(r.wind_speed), 0) / windRecords.length;
+        // Average wind direction using vector mean
+        const sinSum = windRecords.reduce((s, r) => s + Math.sin(parseFloat(r.wind_dir) * Math.PI / 180), 0);
+        const cosSum = windRecords.reduce((s, r) => s + Math.cos(parseFloat(r.wind_dir) * Math.PI / 180), 0);
+        displayWindDir = ((Math.atan2(sinSum, cosSum) * 180 / Math.PI) + 360) % 360;
+      } else {
+        displayWindSpd = null;
+        displayWindDir = null;
+      }
       avgLabel    = ' · ' + AVG_WINDOW_MINS + '-min avg (' + recent.length + ' readings)';
       console.log('[HeatGuard] ' + AVG_WINDOW_MINS + '-min avg (' + recent.length + ' pts): HI ' +
                   displayHI.toFixed(1) + '°C | WBGT ' + displayWBGT.toFixed(1) +
@@ -1266,6 +1380,8 @@ async function fetchLive() {
       displayWBGT = latestWBGT;
       displayTemp = latestTempC;
       displayHum  = latestHum;
+      displayWindSpd = (latest.wind_speed != null && latest.wind_speed !== '' && !isNaN(parseFloat(latest.wind_speed))) ? parseFloat(latest.wind_speed) : null;
+      displayWindDir = (latest.wind_dir != null && latest.wind_dir !== '' && !isNaN(parseFloat(latest.wind_dir))) ? parseFloat(latest.wind_dir) : null;
       avgLabel    = ' · latest (' + pool.length + ' in pool)';
       console.log('[HeatGuard] No data in last ' + AVG_WINDOW_MINS + ' min — using latest reading');
     }
@@ -1281,6 +1397,7 @@ async function fetchLive() {
     stat.textContent = 'Live ' + fullDate + ' (' + dayName + ')';
 
     applyLive(displayHI, displayWBGT, displayTemp, displayHum);
+    updateMapDataLabels(displayTemp, displayHI, displayWBGT, displayHum, displayWindSpd, displayWindDir);
     document.getElementById('loadOv').classList.add('gone');
     maybeStartTour();
 
@@ -1773,7 +1890,7 @@ const TOUR_STEPS = [
   {
     target: '#map',
     title: 'Interactive Map',
-    desc: 'Each barangay is color-coded by heat risk level. Hover to highlight, click to open the detail panel. You can zoom, pan, and switch between Dark, Light, Streets, Satellite, and Topo basemaps using the layer control (top-right).',
+    desc: 'Each barangay is color-coded by heat risk level. Hover to highlight, click to open the detail panel. Live station readings (Temperature, HI, WBGT, Humidity, and Wind) are displayed directly on the map near the weather station.',
     pos: 'center'
   },
   {
