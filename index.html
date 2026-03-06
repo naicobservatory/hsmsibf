@@ -170,7 +170,7 @@ header{
 .mdl-temp{font-size:20px;font-weight:900;color:#fff;text-shadow:0 1.5px 5px rgba(0,0,0,.75),0 0 2px rgba(0,0,0,.5);line-height:1;letter-spacing:-.5px}
 .mdl-temp sup{font-size:10px;font-weight:700;vertical-align:super}
 .mdl-sub{font-size:8px;font-weight:600;color:rgba(255,255,255,.8);text-shadow:0 1px 3px rgba(0,0,0,.7);line-height:1;margin-top:1px;letter-spacing:.3px}
-.mdl-wind{display:flex;align-items:center;gap:4px;margin-top:2px}
+.mdl-wind{display:flex;align-items:center;gap:1px;margin-top:2px}
 .mdl-wind-arrow{width:22px;height:22px;transition:transform .3s;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));transform-origin:center center}
 .mdl-wind-spd{font-size:9px;font-weight:700;color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(0,0,0,.7)}
 
@@ -947,7 +947,7 @@ function createMapDataLabels() {
     html: '<div class="mdl-wind" id="mdlWind" style="display:none">' +
           '<img class="mdl-wind-arrow" id="mdlWindArrow" src="windsvg.svg" alt="wind">' +
           '<span class="mdl-wind-spd" id="mdlWindSpd"></span></div>',
-    iconAnchor: [-14, -24]
+    iconAnchor: [-14, -18]
   });
   mapWindLabel = L.marker(STATION_POS, { icon: windIcon, zIndexOffset: 898, interactive: false });
   stationDataGroup.addLayer(mapWindLabel);
@@ -1092,7 +1092,7 @@ function refreshMapDisplay() {
           // SVG default points upper-right (~315°), rotate so 0°=North
           // windDir is "from" direction, +180 = "to" direction
           if (d.windDir !== null) {
-            arrow.style.transform = 'rotate(' + ((d.windDir + 180 + 45) % 360) + 'deg)';
+            arrow.style.transform = 'rotate(' + ((d.windDir + 180) % 360) + 'deg)';
           }
         }
         document.getElementById('mdlWindSpd').textContent = degToCompass(d.windDir);
