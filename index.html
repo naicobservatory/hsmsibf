@@ -269,6 +269,8 @@ header{
 
 /* Leaflet layer control override */
 .leaflet-control-layers{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:8px!important}
+.leaflet-control-layers-separator{border-top:1px solid var(--border)!important;margin:6px 0!important}
+.leaflet-control-layers label{color:var(--muted)!important;font-size:12px!important}
 /* ================================================================
    MOBILE RESPONSIVE — screens narrower than 768px
    Layout: header (compact) → map (full width) → sidebar (bottom sheet)
@@ -874,7 +876,6 @@ const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/servi
 const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenTopoMap'});
 const map = L.map('map',{center:[14.3167,120.7667],zoom:13,layers:[dark],zoomControl:false});
 L.control.zoom({position:'topright'}).addTo(map);
-L.control.layers({"Dark":dark,"Light":grey,"Streets":streets,"Satellite":satellite,"Topo":topo},null,{position:'topright'}).addTo(map);
 
 // ── AWS Station Marker ──────────────────────────────────────
 const stationIcon = L.icon({
@@ -884,11 +885,7 @@ const stationIcon = L.icon({
   popupAnchor: [0, -13]
 });
 const stationMarker = L.marker([14.3249402, 120.8086893], { icon: stationIcon, zIndexOffset: 1000 })
-  .addTo(map)
   .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>PPW Weather Station</b><br><span style="font-size:11px;color:#666">14.3249°N, 120.8087°E</span></div>');
-const stationMarker2 = L.marker([14.322429755684219, 120.7718108314786], { icon: stationIcon, zIndexOffset: 1000 })
-  .addTo(map)
-  .bindPopup('<div style="text-align:center;font-family:DM Sans,sans-serif"><b>Naic DRRMO AWS</b><br><span style="font-size:11px;color:#666">14.3224°N, 120.7718°E</span></div>');
 
 // ── Map Data Labels (live readings on map) ─────────────────
 const STATION_POS = [14.3249402, 120.8086893];  // PPW station
@@ -897,6 +894,9 @@ let mapDataLabel = null;
 let mapWindLabel = null;
 let mapExtraLabel = null;
 
+// Layer group that holds station marker + all data labels
+const stationDataGroup = L.layerGroup([stationMarker]).addTo(map);
+
 function createMapDataLabels() {
   // Main temperature label (offset northeast of station)
   const tempIcon = L.divIcon({
@@ -904,7 +904,8 @@ function createMapDataLabels() {
     html: '<div class="mdl-temp" id="mdlTemp">--°</div>',
     iconAnchor: [-14, 22]
   });
-  mapDataLabel = L.marker(STATION_POS, { icon: tempIcon, zIndexOffset: 900, interactive: false }).addTo(map);
+  mapDataLabel = L.marker(STATION_POS, { icon: tempIcon, zIndexOffset: 900, interactive: false });
+  stationDataGroup.addLayer(mapDataLabel);
 
   // Extra readings (HI, WBGT, Humidity) — below temperature
   const extraIcon = L.divIcon({
@@ -912,7 +913,8 @@ function createMapDataLabels() {
     html: '<div id="mdlExtra"><div class="mdl-sub" id="mdlHI"></div><div class="mdl-sub" id="mdlWBGT"></div><div class="mdl-sub" id="mdlHum"></div></div>',
     iconAnchor: [-14, -2]
   });
-  mapExtraLabel = L.marker(STATION_POS, { icon: extraIcon, zIndexOffset: 899, interactive: false }).addTo(map);
+  mapExtraLabel = L.marker(STATION_POS, { icon: extraIcon, zIndexOffset: 899, interactive: false });
+  stationDataGroup.addLayer(mapExtraLabel);
 
   // Wind arrow + speed
   const windIcon = L.divIcon({
@@ -922,8 +924,16 @@ function createMapDataLabels() {
           '<span class="mdl-wind-spd" id="mdlWindSpd"></span></div>',
     iconAnchor: [-14, -24]
   });
-  mapWindLabel = L.marker(STATION_POS, { icon: windIcon, zIndexOffset: 898, interactive: false }).addTo(map);
+  mapWindLabel = L.marker(STATION_POS, { icon: windIcon, zIndexOffset: 898, interactive: false });
+  stationDataGroup.addLayer(mapWindLabel);
 }
+
+// Layer control with basemaps + station data overlay toggle
+L.control.layers(
+  {"Dark":dark,"Light":grey,"Streets":streets,"Satellite":satellite,"Topo":topo},
+  {"📡 Station Data": stationDataGroup},
+  {position:'topright'}
+).addTo(map);
 
 function getTempColor(temp) {
   if (temp >= 42) return '#dc2626';     // extreme red
@@ -936,6 +946,9 @@ function getTempColor(temp) {
 
 function updateMapDataLabels(temp, hi, wbgt, hum, windSpd, windDir) {
   if (!mapDataLabel) createMapDataLabels();
+
+  // Cache latest values for layer toggle refresh
+  lastMapData = { temp:temp, hi:hi, wbgt:wbgt, hum:hum, windSpd:windSpd, windDir:windDir };
 
   // Temperature with color
   const tColor = getTempColor(temp);
@@ -968,6 +981,17 @@ function updateMapDataLabels(temp, hi, wbgt, hum, windSpd, windDir) {
 }
 
 createMapDataLabels();
+let lastMapData = { temp:0, hi:0, wbgt:0, hum:0, windSpd:null, windDir:null };
+
+// Refresh data labels when station layer is toggled back on
+map.on('overlayadd', function(e) {
+  if (e.layer === stationDataGroup) {
+    // Small delay for DOM to attach
+    setTimeout(function() {
+      updateMapDataLabels(lastMapData.temp, lastMapData.hi, lastMapData.wbgt, lastMapData.hum, lastMapData.windSpd, lastMapData.windDir);
+    }, 50);
+  }
+});
 
 let mapFirstRender = true;
 let defaultBounds = null;
@@ -1890,7 +1914,7 @@ const TOUR_STEPS = [
   {
     target: '#map',
     title: 'Interactive Map',
-    desc: 'Each barangay is color-coded by heat risk level. Hover to highlight, click to open the detail panel. Live station readings (Temperature, HI, WBGT, Humidity, and Wind) are displayed directly on the map near the weather station.',
+    desc: 'Each barangay is color-coded by heat risk level. Hover to highlight, click to open the detail panel. Live station readings are displayed on the map — toggle them on/off via "📡 Station Data" in the layer switcher (top-right).',
     pos: 'center'
   },
   {
