@@ -268,16 +268,16 @@ header{
 .bar-bg{height:5px;background:var(--subtle-hover);border-radius:3px;overflow:hidden}
 .bar-fill{height:100%;border-radius:3px;transition:width .55s cubic-bezier(.4,0,.2,1)}
 
-/* === STATION DISPLAY CONTROL (hover-expandable) === */
-.station-ctrl{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:10px!important;overflow:hidden;font-family:'DM Sans',sans-serif;transition:all .2s}
-.station-ctrl .sc-expand{display:flex;flex-direction:column}
-.station-ctrl .sc-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;cursor:pointer}
-.station-ctrl .sc-icon svg{width:18px;height:18px;fill:var(--muted)}
-.station-ctrl:hover .sc-icon svg{fill:var(--text)}
-.station-ctrl .sc-panel{max-height:0;overflow:hidden;opacity:0;min-width:170px;transition:max-height .25s ease,opacity .2s}
-.station-ctrl:hover .sc-panel{max-height:300px;opacity:1}
-.sc-header{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
-.sc-header:hover{background:var(--subtle-hover)}
+/* === STATION DISPLAY CONTROL (click-expandable, slides left) === */
+.station-ctrl{background:transparent!important;border:none!important;overflow:visible;font-family:'DM Sans',sans-serif;display:flex;justify-content:flex-end}
+.station-ctrl .sc-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;cursor:pointer;background:var(--card);border:1px solid var(--border);border-radius:8px;flex-shrink:0;z-index:2}
+.station-ctrl .sc-icon svg{width:18px;height:18px;fill:var(--muted);transition:fill .15s}
+.station-ctrl .sc-icon:hover svg{fill:var(--text)}
+.station-ctrl .sc-panel{position:absolute;right:0;top:0;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:180px;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;transform:translateX(10px);pointer-events:none;transition:all .2s cubic-bezier(.4,0,.2,1);z-index:1}
+.station-ctrl.open .sc-panel{opacity:1;transform:translateX(0);pointer-events:auto}
+.station-ctrl.open .sc-icon{border-color:var(--accent)}
+.station-ctrl.open .sc-icon svg{fill:var(--accent)}
+.sc-header{display:flex;align-items:center;gap:8px;padding:8px 12px;user-select:none;border-bottom:1px solid var(--border)}
 .sc-header input[type="checkbox"]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;flex-shrink:0}
 .sc-title{font-size:11px;font-weight:600;color:var(--text);flex:1}
 .sc-body{display:flex;flex-direction:column}
@@ -372,7 +372,6 @@ header{
   .mdl-wind-arrow{width:18px;height:18px}
   .mdl-wind-spd{font-size:8px}
   .map-legend{bottom:10px;left:10px;padding:6px 8px;border-radius:8px}
-  .station-ctrl{min-width:auto}
   .station-ctrl .sc-panel{min-width:150px}
   .sc-header{padding:6px 10px}
   .sc-title{font-size:10px}
@@ -942,11 +941,11 @@ function createMapDataLabels() {
   mapExtraLabel = L.marker(STATION_POS, { icon: extraIcon, zIndexOffset: 899, interactive: false });
   stationDataGroup.addLayer(mapExtraLabel);
 
-  // Wind arrow + speed (uses windsvg.svg triangle)
+  // Wind arrow + speed (uses windsvg.svg from repo)
   const windIcon = L.divIcon({
     className: 'map-data-label',
     html: '<div class="mdl-wind" id="mdlWind" style="display:none">' +
-          '<svg class="mdl-wind-arrow" id="mdlWindArrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1500"><path id="mdlWindPath" d="M799.8 1278.3c-1.9 0-3.1 0-5 0-17.3-2.5-30.3-16.1-32.2-32.8-9.9-89.2-16.1-164.7-21.7-225.4-13-156-19.2-234-58.8-273.7-39.6-39.6-117.7-45.8-273.7-58.8-60.7-5.6-136.2-11.8-225.4-21.7-16.7-1.9-30.3-14.9-32.8-32.2-1.9-17.3 8-33.4 24.1-39.6L1156.5 224.4c13.6-5.6 29.1-1.9 39.6 8 9.9 10.5 13.6 26 8 39.6L834.5 1254.1c-5.6 14.9-19.2 24.2-34.7 24.2z" fill-rule="evenodd"/></svg>' +
+          '<img class="mdl-wind-arrow" id="mdlWindArrow" src="windsvg.svg" alt="wind">' +
           '<span class="mdl-wind-spd" id="mdlWindSpd"></span></div>',
     iconAnchor: [-14, -24]
   });
@@ -966,22 +965,21 @@ const StationControl = L.Control.extend({
   options: { position: 'topright' },
   onAdd: function() {
     const container = L.DomUtil.create('div', 'station-ctrl leaflet-bar');
+    container.id = 'stationCtrl';
     container.innerHTML =
-      '<div class="sc-expand">' +
-        '<div class="sc-icon" title="Weather Station">' +
-          '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a3 3 0 0 1 3 3v1h1a2 2 0 0 1 2 2v1a5 5 0 0 1-2.5 4.33V15h-1v5h1v2H8.5v-2h1v-5h-1v-1.67A5 5 0 0 1 6 9V8a2 2 0 0 1 2-2h1V5a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v1h2V5a1 1 0 0 0-1-1z"/></svg>' +
+      '<div class="sc-icon" onclick="toggleStationCtrl(event)" title="Weather Station">' +
+        '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a3 3 0 0 1 3 3v1h1a2 2 0 0 1 2 2v1a5 5 0 0 1-2.5 4.33V15h-1v5h1v2H8.5v-2h1v-5h-1v-1.67A5 5 0 0 1 6 9V8a2 2 0 0 1 2-2h1V5a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v1h2V5a1 1 0 0 0-1-1z"/></svg>' +
+      '</div>' +
+      '<div class="sc-panel">' +
+        '<div class="sc-header">' +
+          '<input type="checkbox" id="scToggle" checked onclick="toggleStationLayer(event)">' +
+          '<span class="sc-title">Weather Station</span>' +
         '</div>' +
-        '<div class="sc-panel">' +
-          '<div class="sc-header">' +
-            '<input type="checkbox" id="scToggle" checked onclick="toggleStationLayer(event)">' +
-            '<span class="sc-title">Weather Station</span>' +
-          '</div>' +
-          '<div class="sc-body">' +
-            '<label class="sc-opt active" data-mode="temp"><input type="radio" name="stationMode" value="temp" checked><span class="sc-dot"></span>Temperature</label>' +
-            '<label class="sc-opt" data-mode="rh"><input type="radio" name="stationMode" value="rh"><span class="sc-dot"></span>Relative Humidity</label>' +
-            '<label class="sc-opt" data-mode="wind"><input type="radio" name="stationMode" value="wind"><span class="sc-dot"></span>Winds</label>' +
-            '<label class="sc-opt" data-mode="wbgt"><input type="radio" name="stationMode" value="wbgt"><span class="sc-dot"></span>WBGT</label>' +
-          '</div>' +
+        '<div class="sc-body">' +
+          '<label class="sc-opt active" data-mode="temp"><input type="radio" name="stationMode" value="temp" checked><span class="sc-dot"></span>Temperature</label>' +
+          '<label class="sc-opt" data-mode="rh"><input type="radio" name="stationMode" value="rh"><span class="sc-dot"></span>Relative Humidity</label>' +
+          '<label class="sc-opt" data-mode="wind"><input type="radio" name="stationMode" value="wind"><span class="sc-dot"></span>Winds</label>' +
+          '<label class="sc-opt" data-mode="wbgt"><input type="radio" name="stationMode" value="wbgt"><span class="sc-dot"></span>WBGT</label>' +
         '</div>' +
       '</div>';
     L.DomEvent.disableClickPropagation(container);
@@ -993,6 +991,16 @@ new StationControl().addTo(map);
 
 let stationDisplayMode = 'temp';
 let stationVisible = true;
+
+function toggleStationCtrl(e) {
+  e.stopPropagation();
+  document.getElementById('stationCtrl').classList.toggle('open');
+}
+
+// Close station panel when clicking elsewhere on the map
+map.on('click', function() {
+  document.getElementById('stationCtrl')?.classList.remove('open');
+});
 
 function toggleStationLayer(e) {
   e.stopPropagation();
@@ -1070,20 +1078,22 @@ function refreshMapDisplay() {
     }
 
   } else if (mode === 'wind') {
-    // Show wind speed as main + colored arrow SVG
+    // Show wind speed as main + colored arrow from windsvg.svg
     if (d.windSpd !== null && !isNaN(d.windSpd)) {
       var wColor = getWindColor(d.windSpd);
       if (tdEl) tdEl.innerHTML = '<span style="color:' + wColor + '">' + d.windSpd.toFixed(0) + '</span><span style="font-size:10px;color:var(--dim)"> km/h</span>';
       if (windC) {
         windC.style.display = 'flex';
         var arrow = document.getElementById('mdlWindArrow');
-        var pathEl = document.getElementById('mdlWindPath');
-        // Color the SVG triangle based on wind speed
-        if (pathEl) pathEl.setAttribute('fill', wColor);
-        // Rotate: windDir is "from" direction, +180 = "to" direction
-        // SVG default points upper-left (~315°), so +45° to align to North(0°)
-        if (arrow && d.windDir !== null) {
-          arrow.style.transform = 'rotate(' + ((d.windDir + 180 + 45) % 360) + 'deg)';
+        // Recolor arrow via SVG data URI with dynamic fill
+        if (arrow) {
+          var svgStr = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1500"><path d="M799.8 1278.3c-1.9 0-3.1 0-5 0-17.3-2.5-30.3-16.1-32.2-32.8-9.9-89.2-16.1-164.7-21.7-225.4-13-156-19.2-234-58.8-273.7-39.6-39.6-117.7-45.8-273.7-58.8-60.7-5.6-136.2-11.8-225.4-21.7-16.7-1.9-30.3-14.9-32.8-32.2-1.9-17.3 8-33.4 24.1-39.6L1156.5 224.4c13.6-5.6 29.1-1.9 39.6 8 9.9 10.5 13.6 26 8 39.6L834.5 1254.1c-5.6 14.9-19.2 24.2-34.7 24.2z" fill="' + wColor + '" fill-rule="evenodd"/></svg>';
+          arrow.src = 'data:image/svg+xml;base64,' + btoa(svgStr);
+          // SVG default points upper-right (~315°), rotate so 0°=North
+          // windDir is "from" direction, +180 = "to" direction
+          if (d.windDir !== null) {
+            arrow.style.transform = 'rotate(' + ((d.windDir + 180 + 45) % 360) + 'deg)';
+          }
         }
         document.getElementById('mdlWindSpd').textContent = degToCompass(d.windDir);
       }
