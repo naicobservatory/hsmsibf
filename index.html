@@ -267,9 +267,25 @@ header{
 .bar-bg{height:5px;background:var(--subtle-hover);border-radius:3px;overflow:hidden}
 .bar-fill{height:100%;border-radius:3px;transition:width .55s cubic-bezier(.4,0,.2,1)}
 
+/* === STATION DISPLAY CONTROL === */
+.station-ctrl{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:10px!important;overflow:hidden;min-width:170px;font-family:'DM Sans',sans-serif}
+.sc-header{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.sc-header:hover{background:var(--subtle-hover)}
+.sc-header input[type="checkbox"]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer;flex-shrink:0}
+.sc-title{font-size:12px;font-weight:600;color:var(--text);flex:1}
+.sc-arrow{font-size:11px;color:var(--dim);transition:transform .2s}
+.sc-body{display:flex;flex-direction:column;transition:all .2s}
+.sc-body.collapsed{display:none}
+.sc-opt{display:flex;align-items:center;gap:8px;padding:7px 12px 7px 20px;cursor:pointer;font-size:11px;color:var(--muted);transition:all .15s;border-left:3px solid transparent;user-select:none}
+.sc-opt:hover{background:var(--subtle-hover);color:var(--text)}
+.sc-opt.active{background:rgba(59,130,246,.08);color:var(--accent);border-left-color:var(--accent)}
+.sc-opt input[type="radio"]{display:none}
+.sc-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;position:relative;transition:all .15s}
+.sc-opt.active .sc-dot{border-color:var(--accent)}
+.sc-opt.active .sc-dot::after{content:'';position:absolute;inset:2px;border-radius:50%;background:var(--accent)}
+
 /* Leaflet layer control override */
 .leaflet-control-layers{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:8px!important}
-.leaflet-control-layers-separator{border-top:1px solid var(--border)!important;margin:6px 0!important}
 .leaflet-control-layers label{color:var(--muted)!important;font-size:12px!important}
 /* ================================================================
    MOBILE RESPONSIVE — screens narrower than 768px
@@ -351,6 +367,10 @@ header{
   .mdl-wind-arrow{width:13px;height:13px}
   .mdl-wind-spd{font-size:8px}
   .map-legend{bottom:10px;left:10px;padding:6px 8px;border-radius:8px}
+  .station-ctrl{min-width:140px}
+  .sc-header{padding:6px 10px}
+  .sc-title{font-size:11px}
+  .sc-opt{padding:5px 10px 5px 16px;font-size:10px}
   .click-hint{font-size:9px;padding:4px 10px;bottom:10px}
 
   /* --- DETAIL PANEL becomes full-width overlay --- */
@@ -928,12 +948,72 @@ function createMapDataLabels() {
   stationDataGroup.addLayer(mapWindLabel);
 }
 
-// Layer control with basemaps + station data overlay toggle
+// Layer control — basemaps only
 L.control.layers(
   {"Dark":dark,"Light":grey,"Streets":streets,"Satellite":satellite,"Topo":topo},
-  {"📡 Station Data": stationDataGroup},
+  null,
   {position:'topright'}
 ).addTo(map);
+
+// ── Custom Station Display Control ──────────────────────────
+const StationControl = L.Control.extend({
+  options: { position: 'topright' },
+  onAdd: function() {
+    const container = L.DomUtil.create('div', 'station-ctrl leaflet-bar');
+    container.innerHTML =
+      '<div class="sc-header" onclick="toggleStationPanel(event)">' +
+        '<input type="checkbox" id="scToggle" checked onclick="toggleStationLayer(event)">' +
+        '<span class="sc-title">Weather Station</span>' +
+        '<span class="sc-arrow" id="scArrow">▾</span>' +
+      '</div>' +
+      '<div class="sc-body" id="scBody">' +
+        '<label class="sc-opt active" data-mode="temp"><input type="radio" name="stationMode" value="temp" checked><span class="sc-dot"></span>Temperature</label>' +
+        '<label class="sc-opt" data-mode="rh"><input type="radio" name="stationMode" value="rh"><span class="sc-dot"></span>Relative Humidity</label>' +
+        '<label class="sc-opt" data-mode="wind"><input type="radio" name="stationMode" value="wind"><span class="sc-dot"></span>Winds</label>' +
+        '<label class="sc-opt" data-mode="wbgt"><input type="radio" name="stationMode" value="wbgt"><span class="sc-dot"></span>WBGT</label>' +
+      '</div>';
+    L.DomEvent.disableClickPropagation(container);
+    L.DomEvent.disableScrollPropagation(container);
+    return container;
+  }
+});
+new StationControl().addTo(map);
+
+let stationDisplayMode = 'temp';
+let stationVisible = true;
+
+function toggleStationPanel(e) {
+  // Don't toggle panel if clicking checkbox
+  if (e.target.type === 'checkbox') return;
+  const body = document.getElementById('scBody');
+  const arrow = document.getElementById('scArrow');
+  body.classList.toggle('collapsed');
+  arrow.textContent = body.classList.contains('collapsed') ? '▸' : '▾';
+}
+
+function toggleStationLayer(e) {
+  e.stopPropagation();
+  stationVisible = e.target.checked;
+  if (stationVisible) {
+    map.addLayer(stationDataGroup);
+    setTimeout(function() { refreshMapDisplay(); }, 50);
+  } else {
+    map.removeLayer(stationDataGroup);
+  }
+}
+
+function setStationMode(mode) {
+  stationDisplayMode = mode;
+  document.querySelectorAll('.sc-opt').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.mode === mode);
+  });
+  refreshMapDisplay();
+}
+
+// Attach radio change handlers
+document.addEventListener('change', function(e) {
+  if (e.target.name === 'stationMode') setStationMode(e.target.value);
+});
 
 function getTempColor(temp) {
   if (temp >= 42) return '#dc2626';     // extreme red
@@ -947,51 +1027,87 @@ function getTempColor(temp) {
 function updateMapDataLabels(temp, hi, wbgt, hum, windSpd, windDir) {
   if (!mapDataLabel) createMapDataLabels();
 
-  // Cache latest values for layer toggle refresh
+  // Cache latest values
   lastMapData = { temp:temp, hi:hi, wbgt:wbgt, hum:hum, windSpd:windSpd, windDir:windDir };
 
-  // Temperature with color
-  const tColor = getTempColor(temp);
-  const tdEl = document.getElementById('mdlTemp');
-  if (tdEl) {
-    tdEl.innerHTML = '<span style="color:' + tColor + '">' + temp.toFixed(0) + '°</span>';
-  }
+  refreshMapDisplay();
+}
 
-  // Extra readings
-  const hiEl = document.getElementById('mdlHI');
-  const wEl  = document.getElementById('mdlWBGT');
-  const hEl  = document.getElementById('mdlHum');
-  if (hiEl)  hiEl.textContent  = 'HI ' + hi.toFixed(1) + '°';
-  if (wEl)   wEl.textContent   = 'WBGT ' + wbgt.toFixed(1) + '°';
-  if (hEl)   hEl.textContent   = 'RH ' + Math.round(hum) + '%';
+function refreshMapDisplay() {
+  const d = lastMapData;
+  const mode = stationDisplayMode;
 
-  // Wind (only show if data exists)
-  const windDiv = document.getElementById('mdlWind');
-  const arrow   = document.getElementById('mdlWindArrow');
-  const spdEl   = document.getElementById('mdlWindSpd');
-  if (windSpd !== null && windDir !== null && !isNaN(windSpd) && !isNaN(windDir)) {
-    if (windDiv) windDiv.style.display = 'flex';
-    // Arrow points in wind direction (meteorological: direction wind comes FROM,
-    // so rotate 180° to show where wind blows TO)
-    if (arrow) arrow.style.transform = 'rotate(' + ((windDir + 180) % 360) + 'deg)';
-    if (spdEl) spdEl.textContent = windSpd.toFixed(0) + ' km/h';
-  } else {
-    if (windDiv) windDiv.style.display = 'none';
+  const tdEl   = document.getElementById('mdlTemp');
+  const extraC = document.getElementById('mdlExtra');
+  const windC  = document.getElementById('mdlWind');
+
+  // Hide all sub-elements first
+  if (extraC) extraC.style.display = 'none';
+  if (windC)  windC.style.display  = 'none';
+
+  if (mode === 'temp') {
+    // Show temperature with color + HI below
+    const tColor = getTempColor(d.temp);
+    if (tdEl) tdEl.innerHTML = '<span style="color:' + tColor + '">' + d.temp.toFixed(1) + '°</span>';
+    if (extraC) {
+      extraC.style.display = 'block';
+      document.getElementById('mdlHI').textContent   = 'HI ' + d.hi.toFixed(1) + '°';
+      document.getElementById('mdlWBGT').textContent  = '';
+      document.getElementById('mdlHum').textContent   = '';
+    }
+
+  } else if (mode === 'rh') {
+    // Show humidity as main, temp as sub
+    if (tdEl) tdEl.innerHTML = '<span style="color:#22c55e">' + Math.round(d.hum) + '%</span>';
+    if (extraC) {
+      extraC.style.display = 'block';
+      document.getElementById('mdlHI').textContent   = 'Temp ' + d.temp.toFixed(1) + '°';
+      document.getElementById('mdlWBGT').textContent  = '';
+      document.getElementById('mdlHum').textContent   = '';
+    }
+
+  } else if (mode === 'wind') {
+    // Show wind speed as main + arrow
+    if (d.windSpd !== null && !isNaN(d.windSpd)) {
+      if (tdEl) tdEl.innerHTML = '<span style="color:#60a5fa">' + d.windSpd.toFixed(0) + '</span><span style="font-size:10px;color:var(--dim)"> km/h</span>';
+      if (windC) {
+        windC.style.display = 'flex';
+        const arrow = document.getElementById('mdlWindArrow');
+        if (arrow) arrow.style.transform = 'rotate(' + ((d.windDir + 180) % 360) + 'deg)';
+        document.getElementById('mdlWindSpd').textContent = degToCompass(d.windDir);
+      }
+    } else {
+      if (tdEl) tdEl.innerHTML = '<span style="color:var(--dim)">N/A</span>';
+    }
+
+  } else if (mode === 'wbgt') {
+    // Show WBGT as main, temp as sub
+    const wColor = getWbgtColor(d.wbgt);
+    if (tdEl) tdEl.innerHTML = '<span style="color:' + wColor + '">' + d.wbgt.toFixed(1) + '°</span>';
+    if (extraC) {
+      extraC.style.display = 'block';
+      document.getElementById('mdlHI').textContent   = 'WBGT';
+      document.getElementById('mdlWBGT').textContent  = '';
+      document.getElementById('mdlHum').textContent   = '';
+    }
   }
+}
+
+function degToCompass(deg) {
+  var dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+function getWbgtColor(wbgt) {
+  if (wbgt >= 33) return '#dc2626';
+  if (wbgt >= 30) return '#ef4444';
+  if (wbgt >= 28) return '#f97316';
+  if (wbgt >= 25) return '#eab308';
+  return '#22c55e';
 }
 
 createMapDataLabels();
 let lastMapData = { temp:0, hi:0, wbgt:0, hum:0, windSpd:null, windDir:null };
-
-// Refresh data labels when station layer is toggled back on
-map.on('overlayadd', function(e) {
-  if (e.layer === stationDataGroup) {
-    // Small delay for DOM to attach
-    setTimeout(function() {
-      updateMapDataLabels(lastMapData.temp, lastMapData.hi, lastMapData.wbgt, lastMapData.hum, lastMapData.windSpd, lastMapData.windDir);
-    }, 50);
-  }
-});
 
 let mapFirstRender = true;
 let defaultBounds = null;
@@ -1914,7 +2030,7 @@ const TOUR_STEPS = [
   {
     target: '#map',
     title: 'Interactive Map',
-    desc: 'Each barangay is color-coded by heat risk level. Hover to highlight, click to open the detail panel. Live station readings are displayed on the map — toggle them on/off via "📡 Station Data" in the layer switcher (top-right).',
+    desc: 'Each barangay is color-coded by heat risk level. Hover to highlight, click to open the detail panel. Use the "Weather Station" panel (top-right) to toggle live data on/off and switch between Temperature, Humidity, Winds, and WBGT views.',
     pos: 'center'
   },
   {
